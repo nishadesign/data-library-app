@@ -215,6 +215,7 @@ export default function LibraryDetail({ onCancel, onSave }) {
                     </div>
                   </div>
                 ) : (
+                  <div className="border border-border rounded-lg overflow-hidden">
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -257,6 +258,7 @@ export default function LibraryDetail({ onCancel, onSave }) {
                       ))}
                     </TableBody>
                   </Table>
+                  </div>
                 )}
 
                 <input

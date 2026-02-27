@@ -194,7 +194,7 @@ export default function MainContent({ onNewLibrary, onViewLibrary, refreshKey })
 
         {/* Library list table */}
         {hasLibraries && (
-          <div className="mb-8">
+          <div className="mb-8 border border-border rounded-lg overflow-hidden">
             <Table>
               <TableHeader>
                 <TableRow>

@@ -510,6 +510,7 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
                   Add files up to 1000 files &middot; Supports PDF, HTML, .TXT
                 </p>
 
+                <div className="border border-border rounded-lg overflow-hidden">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -589,6 +590,7 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
                     ))}
                   </TableBody>
                 </Table>
+                </div>
               </div>
 
               <div className="flex items-center gap-2.5 py-4 px-6 border-t border-border opacity-60">
