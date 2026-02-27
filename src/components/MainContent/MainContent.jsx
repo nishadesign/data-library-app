@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Search, Filter, ChevronDown, CloudCog, Database, Check, Ban, ArrowUpDown, ChevronRight, Trash2 } from 'lucide-react'
+import { Search, Filter, ChevronDown, CloudCog, Database, ArrowUpDown, ChevronRight, Trash2 } from 'lucide-react'
 import {
   ArrowUpRight,
 } from '../../assets/icons'
@@ -23,35 +23,17 @@ import {
 import { Tooltip, TooltipTrigger, TooltipContent } from '../ui/tooltip'
 import { Checkbox } from '../ui/checkbox'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../ui/table'
+import { Badge } from '../ui/badge'
 import DataSourceCard from '../DataSourceCard/DataSourceCard'
 import { api } from '../../lib/api'
 
 function StatusIndicator({ status }) {
-  switch (status) {
-    case 'Ready':
-      return (
-        <span className="inline-flex items-center gap-1.5 text-sm text-success">
-          <Check size={14} strokeWidth={2.5} />
-          Ready to use
-        </span>
-      )
-    case 'In Progress':
-      return (
-        <span className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">
-          <span className="w-3.5 h-3.5 rounded-full border-2 border-muted-foreground border-t-transparent animate-spin" />
-          Processing...
-        </span>
-      )
-    case 'Failed':
-      return (
-        <span className="inline-flex items-center gap-1.5 text-sm text-destructive">
-          <Ban size={14} strokeWidth={2} />
-          Failed
-        </span>
-      )
-    default:
-      return <span className="text-sm text-muted-foreground">{status || 'Draft'}</span>
-  }
+  const label = status === 'In Progress' ? 'Processing' : (status || 'Draft')
+  const variant = label === 'Ready' ? 'success'
+    : label === 'Processing' ? 'inProgress'
+    : label === 'Failed' ? 'destructive'
+    : 'default'
+  return <Badge variant={variant}>{label}</Badge>
 }
 
 function formatDate(dateStr) {
