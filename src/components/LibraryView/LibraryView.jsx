@@ -280,10 +280,11 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
         setRawNewFiles([])
 
         const fresh = await api.getLibrary(library.id)
+        setNewFiles([])
         onLibraryUpdate?.(fresh)
 
         if (sseFailedRef.current) {
-          const totalFiles = (fresh.files?.length || files.length) + unsavedIds.length
+          const totalFiles = fresh.files?.length || 1
           const hadSearchIndex = pipelineSteps.some(s => s.name === 'Creating search index' && s.status === 'ready')
           runClientPipeline(totalFiles, hadSearchIndex)
         }
