@@ -341,9 +341,8 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
     return file.status || 'Uploaded'
   }
 
-  const isProcessing = pipelineSteps.some(s => s.status === 'inProgress')
   const displayStatus = pipelineOverall === 'ready' ? 'Ready'
-    : isProcessing ? 'Processing'
+    : pipelineOverall === 'inProgress' ? 'Processing'
     : (library.status || 'Draft')
 
   const agentToolReady = pipelineSteps.some(
