@@ -29,6 +29,14 @@ const DEFAULT_STEPS = [
   { name: 'Indexing data', status: 'default' },
 ]
 
+const PIPELINE_TIMINGS = [
+  { name: 'Uploading files', duration: 4000 },
+  { name: 'Creating search index', duration: 3000, description: "We're creating a search index so your agent can find the most relevant information quickly." },
+  { name: 'Setting up retriever', duration: 3000, description: "We're creating a search index so your agent can find the most relevant information quickly." },
+  { name: 'Building agent tool', duration: 2000, description: 'Creating tool so agent can use this data for context.' },
+  { name: 'Indexing data', duration: 5000, description: "We're structuring your data so it's easy to search, manage, and use over time." },
+]
+
 function AgentToolCard({ libraryName }) {
   const [open, setOpen] = useState(true)
 
@@ -74,6 +82,65 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
   const [editDraft, setEditDraft] = useState({})
   const fileInputRef = useRef(null)
   const scrollRef = useRef(null)
+  const pipelineCancelRef = useRef(null)
+
+  const runClientPipeline = useCallback(async (fileCount, skipReady) => {
+    if (pipelineCancelRef.current) pipelineCancelRef.current.cancelled = true
+    const cancel = { cancelled: false }
+    pipelineCancelRef.current = cancel
+
+    const steps = PIPELINE_TIMINGS.map(s => ({ name: s.name, status: 'default', description: '' }))
+    const reuploadSkip = new Set(['Creating search index', 'Setting up retriever', 'Building agent tool'])
+
+    if (skipReady) {
+      steps.forEach(s => { if (reuploadSkip.has(s.name)) s.status = 'ready' })
+    }
+
+    setPipelineSteps([...steps])
+    setPipelineOverall('inProgress')
+
+    const delay = (ms) => new Promise(r => setTimeout(r, ms))
+
+    for (let i = 0; i < PIPELINE_TIMINGS.length; i++) {
+      if (cancel.cancelled) return
+      if (skipReady && reuploadSkip.has(PIPELINE_TIMINGS[i].name)) continue
+
+      steps[i].status = 'inProgress'
+
+      if (i === 0) {
+        for (let u = 0; u <= fileCount; u++) {
+          if (cancel.cancelled) return
+          steps[i].description = `${u} out of ${fileCount} files uploaded`
+          setPipelineSteps([...steps])
+          await delay(PIPELINE_TIMINGS[i].duration / (fileCount + 1))
+        }
+      } else if (PIPELINE_TIMINGS[i].name === 'Indexing data') {
+        steps[i].description = PIPELINE_TIMINGS[i].description
+        const perFile = PIPELINE_TIMINGS[i].duration / Math.max(fileCount, 1)
+        for (let f = 0; f < fileCount; f++) {
+          if (cancel.cancelled) return
+          setIndexingFileIndex(f)
+          setPipelineSteps([...steps])
+          await delay(perFile)
+        }
+        setIndexingFileIndex(fileCount)
+      } else {
+        steps[i].description = PIPELINE_TIMINGS[i].description || ''
+        setPipelineSteps([...steps])
+        await delay(PIPELINE_TIMINGS[i].duration)
+      }
+
+      if (cancel.cancelled) return
+      steps[i].status = 'ready'
+      steps[i].description = ''
+      setPipelineSteps([...steps])
+    }
+
+    if (!cancel.cancelled) {
+      setPipelineOverall('ready')
+      onLibraryUpdate?.({ status: 'Ready' })
+    }
+  }, [onLibraryUpdate])
 
   const handleScroll = useCallback(() => {
     if (!scrollRef.current) return
@@ -105,26 +172,43 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
     })
   }
 
+  const sseFailedRef = useRef(false)
+
+  useEffect(() => {
+    return () => { if (pipelineCancelRef.current) pipelineCancelRef.current.cancelled = true }
+  }, [])
+
   useEffect(() => {
     if (!library?.id) return
+    sseFailedRef.current = false
 
-    const unsubscribe = api.subscribePipelineStatus(library.id, (data) => {
-      if (data.steps?.length > 0) {
-        setPipelineSteps(data.steps)
-      }
-      setPipelineOverall(data.overall)
+    const unsubscribe = api.subscribePipelineStatus(
+      library.id,
+      (data) => {
+        if (data.steps?.length > 0) {
+          setPipelineSteps(data.steps)
+        }
+        setPipelineOverall(data.overall)
 
-      if (data.indexingFileIndex !== undefined) {
-        setIndexingFileIndex(data.indexingFileIndex)
-      }
+        if (data.indexingFileIndex !== undefined) {
+          setIndexingFileIndex(data.indexingFileIndex)
+        }
 
-      if (data.overall === 'ready') {
-        onLibraryUpdate?.({ status: 'Ready' })
+        if (data.overall === 'ready') {
+          onLibraryUpdate?.({ status: 'Ready' })
+        }
+      },
+      () => {
+        sseFailedRef.current = true
+        if (library.status === 'In Progress') {
+          const fileCount = library.files?.length || 1
+          runClientPipeline(fileCount, false)
+        }
       }
-    })
+    )
 
     return unsubscribe
-  }, [library?.id, onLibraryUpdate])
+  }, [library?.id, library?.status, onLibraryUpdate, runClientPipeline])
 
   const files = library.files || []
 
@@ -197,6 +281,12 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
 
         const fresh = await api.getLibrary(library.id)
         onLibraryUpdate?.(fresh)
+
+        if (sseFailedRef.current) {
+          const totalFiles = (fresh.files?.length || files.length) + unsavedIds.length
+          const hadSearchIndex = pipelineSteps.some(s => s.name === 'Creating search index' && s.status === 'ready')
+          runClientPipeline(totalFiles, hadSearchIndex)
+        }
       }
     } catch (err) {
       console.error('Failed to save:', err)

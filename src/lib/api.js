@@ -60,14 +60,17 @@ export const api = {
     return request(`/libraries/${libraryId}/files/${fileId}`, { method: 'DELETE' })
   },
 
-  subscribePipelineStatus(libraryId, onUpdate) {
+  subscribePipelineStatus(libraryId, onUpdate, onSSEError) {
     const eventSource = new EventSource(`${BASE}/libraries/${libraryId}/status`)
+    let receivedData = false
     eventSource.onmessage = (event) => {
+      receivedData = true
       const data = JSON.parse(event.data)
       onUpdate(data)
     }
     eventSource.onerror = () => {
       eventSource.close()
+      if (!receivedData && onSSEError) onSSEError()
     }
     return () => eventSource.close()
   },
