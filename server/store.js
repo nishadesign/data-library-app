@@ -3,9 +3,19 @@ import { join, dirname } from 'path'
 import { fileURLToPath } from 'url'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
-const DB_PATH = join(__dirname, '..', 'data.json')
+const IS_VERCEL = !!process.env.VERCEL
+const DB_PATH = IS_VERCEL ? '/tmp/data.json' : join(__dirname, '..', 'data.json')
+
+let memoryDB = { libraries: [] }
 
 function readDB() {
+  if (IS_VERCEL) {
+    if (existsSync(DB_PATH)) {
+      try { return JSON.parse(readFileSync(DB_PATH, 'utf-8')) }
+      catch { return memoryDB }
+    }
+    return memoryDB
+  }
   if (!existsSync(DB_PATH)) {
     writeFileSync(DB_PATH, JSON.stringify({ libraries: [] }, null, 2))
   }
@@ -13,6 +23,11 @@ function readDB() {
 }
 
 function writeDB(data) {
+  if (IS_VERCEL) {
+    memoryDB = data
+    try { writeFileSync(DB_PATH, JSON.stringify(data, null, 2)) } catch {}
+    return
+  }
   writeFileSync(DB_PATH, JSON.stringify(data, null, 2))
 }
 

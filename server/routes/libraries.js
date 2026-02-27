@@ -3,6 +3,7 @@ import multer from 'multer'
 import { v4 as uuidv4 } from 'uuid'
 import { join, dirname } from 'path'
 import { fileURLToPath } from 'url'
+import { existsSync, mkdirSync } from 'fs'
 import {
   getAllLibraries,
   getLibrary,
@@ -15,15 +16,22 @@ import {
 import { pipelineManager } from '../pipeline.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
-const UPLOADS_DIR = join(__dirname, '..', '..', 'uploads')
+const IS_VERCEL = !!process.env.VERCEL
+const UPLOADS_DIR = IS_VERCEL ? '/tmp/uploads' : join(__dirname, '..', '..', 'uploads')
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, UPLOADS_DIR),
-  filename: (req, file, cb) => {
-    const uniqueName = `${uuidv4()}-${file.originalname}`
-    cb(null, uniqueName)
-  },
-})
+if (!existsSync(UPLOADS_DIR)) {
+  mkdirSync(UPLOADS_DIR, { recursive: true })
+}
+
+const storage = IS_VERCEL
+  ? multer.memoryStorage()
+  : multer.diskStorage({
+      destination: (req, file, cb) => cb(null, UPLOADS_DIR),
+      filename: (req, file, cb) => {
+        const uniqueName = `${uuidv4()}-${file.originalname}`
+        cb(null, uniqueName)
+      },
+    })
 
 const upload = multer({
   storage,
@@ -96,7 +104,7 @@ libraryRouter.post('/:id/files', upload.array('files', 1000), (req, res) => {
     const fileRecord = {
       id: uuidv4(),
       name: file.originalname,
-      storedName: file.filename,
+      storedName: file.filename || `${uuidv4()}-${file.originalname}`,
       size: file.size,
       mimetype: file.mimetype,
       status: 'Uploaded',
