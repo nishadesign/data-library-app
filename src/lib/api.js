@@ -45,15 +45,19 @@ export const api = {
     for (const file of files) {
       formData.append('files', file)
     }
-    const res = await fetch(`${BASE}/libraries/${libraryId}/files`, {
+    try {
+      const res = await fetch(`${BASE}/libraries/${libraryId}/files`, {
+        method: 'POST',
+        body: formData,
+      })
+      if (res.ok) return res.json()
+    } catch {}
+
+    const metadata = Array.from(files).map(f => ({ name: f.name, size: f.size, type: f.type }))
+    return request(`/libraries/${libraryId}/register-files`, {
       method: 'POST',
-      body: formData,
+      body: JSON.stringify(metadata),
     })
-    if (!res.ok) {
-      const error = await res.json().catch(() => ({ error: res.statusText }))
-      throw new Error(error.error || 'Upload failed')
-    }
-    return res.json()
   },
 
   deleteFile(libraryId, fileId) {

@@ -121,6 +121,35 @@ libraryRouter.post('/:id/files', upload.array('files', 1000), (req, res) => {
   res.status(201).json(addedFiles)
 })
 
+libraryRouter.post('/:id/register-files', (req, res) => {
+  const lib = getLibrary(req.params.id)
+  if (!lib) return res.status(404).json({ error: 'Library not found' })
+
+  const fileMetas = req.body
+  if (!Array.isArray(fileMetas)) return res.status(400).json({ error: 'Expected array of file metadata' })
+
+  const addedFiles = []
+  for (const meta of fileMetas) {
+    const fileRecord = {
+      id: uuidv4(),
+      name: meta.name,
+      storedName: `${uuidv4()}-${meta.name}`,
+      size: meta.size || 0,
+      mimetype: meta.type || 'application/octet-stream',
+      status: 'Uploaded',
+      uploadedBy: 'Current User',
+      uploadedOn: new Date().toISOString(),
+    }
+    addFileToLibrary(req.params.id, fileRecord)
+    addedFiles.push(fileRecord)
+  }
+
+  updateLibrary(req.params.id, { status: 'In Progress' })
+  pipelineManager.start(req.params.id, addedFiles.length)
+
+  res.status(201).json(addedFiles)
+})
+
 libraryRouter.delete('/:id/files/:fileId', (req, res) => {
   const removed = removeFileFromLibrary(req.params.id, req.params.fileId)
   if (!removed) return res.status(404).json({ error: 'File not found' })
