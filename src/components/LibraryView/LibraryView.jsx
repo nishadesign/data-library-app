@@ -84,7 +84,7 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
   const scrollRef = useRef(null)
   const pipelineCancelRef = useRef(null)
 
-  const runClientPipeline = useCallback(async (fileCount, skipReady) => {
+  const runClientPipeline = useCallback(async (fileCount, skipReady, uploadAlreadyDone) => {
     if (pipelineCancelRef.current) pipelineCancelRef.current.cancelled = true
     const cancel = { cancelled: false }
     pipelineCancelRef.current = cancel
@@ -95,6 +95,10 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
     if (skipReady) {
       steps.forEach(s => { if (reuploadSkip.has(s.name)) s.status = 'ready' })
     }
+    if (uploadAlreadyDone) {
+      steps[0].status = 'ready'
+      steps[0].description = ''
+    }
 
     setPipelineSteps([...steps])
     setPipelineOverall('inProgress')
@@ -103,6 +107,7 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
 
     for (let i = 0; i < PIPELINE_TIMINGS.length; i++) {
       if (cancel.cancelled) return
+      if (uploadAlreadyDone && i === 0) continue
       if (skipReady && reuploadSkip.has(PIPELINE_TIMINGS[i].name)) continue
 
       steps[i].status = 'inProgress'
@@ -281,9 +286,22 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
         setPipelineSteps([...uploadingSteps])
         setPipelineOverall('inProgress')
 
+        await new Promise(r => setTimeout(r, 50))
+
         if (rawNewFiles.length > 0) {
           await api.uploadFiles(library.id, rawNewFiles)
         }
+
+        const fileCount = unsavedIds.length
+        for (let u = 1; u <= fileCount; u++) {
+          uploadingSteps[0].description = `${u} out of ${fileCount} files uploaded`
+          setPipelineSteps([...uploadingSteps])
+          await new Promise(r => setTimeout(r, PIPELINE_TIMINGS[0].duration / (fileCount + 1)))
+        }
+
+        uploadingSteps[0].status = 'ready'
+        uploadingSteps[0].description = ''
+        setPipelineSteps([...uploadingSteps])
 
         setNewFiles(prev =>
           prev.map(f => unsavedIds.includes(f.id) ? { ...f, status: 'Uploaded' } : f)
@@ -296,7 +314,7 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
 
         if (sseFailedRef.current) {
           const totalFiles = fresh.files?.length || 1
-          runClientPipeline(totalFiles, hadSearchIndex)
+          runClientPipeline(totalFiles, hadSearchIndex, true)
         }
       }
     } catch (err) {
