@@ -43,9 +43,19 @@ class PipelineManager {
   }
 
   async start(libraryId, fileCount) {
+    const previous = this.getStatus(libraryId)
+    const searchIndexReady = previous?.steps?.some(
+      s => s.name === 'Creating search index' && s.status === 'ready'
+    )
+    const reuploadSkip = new Set([
+      'Creating search index',
+      'Setting up retriever',
+      'Building agent tool',
+    ])
+
     const steps = PIPELINE_STEPS.map(step => ({
       name: step.name,
-      status: 'default',
+      status: (searchIndexReady && reuploadSkip.has(step.name)) ? 'ready' : 'default',
       description: '',
     }))
 
@@ -53,6 +63,8 @@ class PipelineManager {
     this.broadcast(libraryId, this.getStatus(libraryId))
 
     for (let i = 0; i < PIPELINE_STEPS.length; i++) {
+      if (searchIndexReady && reuploadSkip.has(PIPELINE_STEPS[i].name)) continue
+
       steps[i].status = 'inProgress'
 
       if (i === 0) {
@@ -61,6 +73,18 @@ class PipelineManager {
           this.broadcast(libraryId, this.getStatus(libraryId))
           await this.delay(PIPELINE_STEPS[i].duration / (fileCount + 1))
         }
+      } else if (PIPELINE_STEPS[i].name === 'Indexing data') {
+        const perFile = PIPELINE_STEPS[i].duration / Math.max(fileCount, 1)
+        for (let f = 0; f < fileCount; f++) {
+          steps[i].description = PIPELINE_STEPS[i].description
+          const status = this.getStatus(libraryId)
+          status.indexingFileIndex = f
+          this.broadcast(libraryId, status)
+          await this.delay(perFile)
+        }
+        const status = this.getStatus(libraryId)
+        status.indexingFileIndex = fileCount
+        this.broadcast(libraryId, status)
       } else {
         steps[i].description = PIPELINE_STEPS[i].description
         this.broadcast(libraryId, this.getStatus(libraryId))

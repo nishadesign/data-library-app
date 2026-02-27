@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react'
-import { ChevronDown, Search, Plus, MoreHorizontal, ArrowUpDown, X } from 'lucide-react'
+import { ChevronDown, Search, Plus, MoreHorizontal, ArrowUpDown, X, Trash2 } from 'lucide-react'
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
 import { Textarea } from '../ui/textarea'
@@ -22,6 +22,7 @@ export default function LibraryDetail({ onCancel, onSave }) {
   const [pendingFiles, setPendingFiles] = useState([])
   const [rawFiles, setRawFiles] = useState([])
   const [saving, setSaving] = useState(false)
+  const [selectedFiles, setSelectedFiles] = useState(new Set())
   const fileInputRef = useRef(null)
 
   function handleLibraryNameChange(e) {
@@ -41,12 +42,45 @@ export default function LibraryDetail({ onCancel, onSave }) {
     setRawFiles(prev => [...prev, ...files])
     setPendingFiles(prev => [
       ...prev,
-      ...files.map(f => ({ name: f.name, size: formatSize(f.size) })),
+      ...files.map(f => ({ name: f.name, size: formatSize(f.size), status: '' })),
     ])
   }
 
+  function toggleFileSelected(index) {
+    setSelectedFiles(prev => {
+      const next = new Set(prev)
+      next.has(index) ? next.delete(index) : next.add(index)
+      return next
+    })
+  }
+
+  function toggleAllFiles() {
+    if (selectedFiles.size === pendingFiles.length) {
+      setSelectedFiles(new Set())
+    } else {
+      setSelectedFiles(new Set(pendingFiles.map((_, i) => i)))
+    }
+  }
+
+  function handleRemoveFiles() {
+    const indices = selectedFiles
+    setPendingFiles(prev => prev.filter((_, i) => !indices.has(i)))
+    setRawFiles(prev => prev.filter((_, i) => !indices.has(i)))
+    setSelectedFiles(new Set())
+  }
+
   async function handleSave() {
+    if (pendingFiles.length === 0) return
     setSaving(true)
+
+    const unsavedIndices = pendingFiles
+      .map((f, i) => (f.status === '' ? i : -1))
+      .filter(i => i !== -1)
+
+    setPendingFiles(prev =>
+      prev.map((f, i) => unsavedIndices.includes(i) ? { ...f, status: 'Uploading' } : f)
+    )
+
     try {
       const library = await api.createLibrary({
         libraryName,
@@ -60,18 +94,26 @@ export default function LibraryDetail({ onCancel, onSave }) {
         await api.uploadFiles(library.id, rawFiles)
       }
 
+      setPendingFiles(prev =>
+        prev.map((f, i) => unsavedIndices.includes(i) ? { ...f, status: 'Uploaded' } : f)
+      )
+
+      await new Promise(r => setTimeout(r, 600))
       const fresh = await api.getLibrary(library.id)
       onSave?.(fresh)
     } catch (err) {
       console.error('Failed to save library:', err)
+      setPendingFiles(prev =>
+        prev.map((f, i) => unsavedIndices.includes(i) ? { ...f, status: '' } : f)
+      )
     } finally {
       setSaving(false)
     }
   }
 
   return (
-    <div className="flex-1 bg-muted overflow-y-auto flex flex-col">
-      <div className="flex-1 p-6 pb-0 overflow-y-auto">
+    <div className="flex-1 h-full bg-muted flex flex-col overflow-hidden">
+      <div className="flex-1 p-6 pb-0 overflow-y-auto min-h-0">
         {/* Form Section */}
         <Card className="p-5 px-6 pb-6 mb-4">
           <div className="flex flex-col gap-1.5 w-full mb-4">
@@ -139,7 +181,7 @@ export default function LibraryDetail({ onCancel, onSave }) {
                   <div className="flex items-center gap-3">
                   <div className="flex items-center gap-2 border border-input rounded px-3 py-[5px] bg-background w-40 focus-within:border-ring focus-within:ring-1 focus-within:ring-ring">
                     <Search size={14} className="text-muted-foreground" />
-                    <input type="text" placeholder="Search..." className="border-none outline-none text-[13px] font-sans text-foreground flex-1 bg-transparent placeholder:text-muted-foreground" />
+                    <input type="text" placeholder="Search..." className="border-none outline-none text-sm font-sans text-foreground flex-1 bg-transparent placeholder:text-muted-foreground" />
                   </div>
                   <Button variant="neutral" onClick={() => fileInputRef.current?.click()}>
                     <Plus size={12} />
@@ -159,8 +201,8 @@ export default function LibraryDetail({ onCancel, onSave }) {
                   <div
                     className={`border-2 border-dashed rounded-md min-h-[140px] flex flex-col items-center justify-center cursor-pointer transition-colors mb-3 ${
                       dragOver
-                        ? 'border-primary bg-[#ddeeff]'
-                        : 'border-primary-light-border bg-primary-light'
+                        ? 'border-muted-foreground bg-[#e8e8e8]'
+                        : 'border-[#c9c9c9] bg-[#f3f3f3]'
                     }`}
                     onDragOver={e => { e.preventDefault(); setDragOver(true) }}
                     onDragLeave={e => { e.preventDefault(); setDragOver(false) }}
@@ -177,7 +219,11 @@ export default function LibraryDetail({ onCancel, onSave }) {
                     <TableHeader>
                       <TableRow>
                         <TableHead className="w-9 text-center">
-                          <Checkbox aria-label="Select all" />
+                          <Checkbox
+                            aria-label="Select all"
+                            checked={pendingFiles.length > 0 && selectedFiles.size === pendingFiles.length}
+                            onCheckedChange={toggleAllFiles}
+                          />
                         </TableHead>
                         <TableHead><span className="flex items-center gap-1">File Name <ArrowUpDown size={10} className="text-muted-foreground" /></span></TableHead>
                         <TableHead><span className="flex items-center gap-1">Size <ArrowUpDown size={10} className="text-muted-foreground" /></span></TableHead>
@@ -191,11 +237,15 @@ export default function LibraryDetail({ onCancel, onSave }) {
                       {pendingFiles.map((file, i) => (
                         <TableRow key={i}>
                           <TableCell className="text-center">
-                            <Checkbox aria-label={`Select ${file.name}`} />
+                            <Checkbox
+                              aria-label={`Select ${file.name}`}
+                              checked={selectedFiles.has(i)}
+                              onCheckedChange={() => toggleFileSelected(i)}
+                            />
                           </TableCell>
                           <TableCell>{file.name}</TableCell>
                           <TableCell>{file.size}</TableCell>
-                          <TableCell className="text-muted-foreground">Pending</TableCell>
+                          <TableCell className="text-muted-foreground">{file.status || ''}</TableCell>
                           <TableCell />
                           <TableCell />
                           <TableCell className="text-center">
@@ -217,16 +267,17 @@ export default function LibraryDetail({ onCancel, onSave }) {
                   className="hidden"
                   onChange={e => { addFiles(e.target.files); e.target.value = '' }}
                 />
-                <div className="flex items-center gap-2.5 mt-1">
-                  <Switch
-                    id="useAI"
-                    checked={useAI}
-                    onCheckedChange={setUseAI}
-                  />
-                  <Label htmlFor="useAI" className="text-[13px] text-foreground font-normal cursor-pointer">
-                    Use AI to process content, extract text, tables, images and structures from files.
-                  </Label>
-                </div>
+              </div>
+
+              <div className="flex items-center gap-2.5 py-4 px-6 border-t border-border">
+                <Switch
+                  id="useAI"
+                  checked={useAI}
+                  onCheckedChange={setUseAI}
+                />
+                <Label htmlFor="useAI" className="text-sm text-foreground font-normal cursor-pointer">
+                  Use AI to process content, extract text, tables, images and structures from files.
+                </Label>
               </div>
             </CollapsibleContent>
           </Card>
@@ -242,9 +293,16 @@ export default function LibraryDetail({ onCancel, onSave }) {
         <Button variant="neutral" onClick={onCancel}>
           Cancel
         </Button>
-        <Button variant="brand" onClick={handleSave} disabled={saving}>
-          {saving ? 'Saving...' : 'Save'}
-        </Button>
+        {selectedFiles.size > 0 ? (
+          <Button variant="destructive" onClick={handleRemoveFiles}>
+            <Trash2 size={14} />
+            Remove Files
+          </Button>
+        ) : (
+          <Button variant="brand" onClick={handleSave} disabled={saving}>
+            {saving ? 'Saving...' : 'Save'}
+          </Button>
+        )}
       </div>
     </div>
   )

@@ -1,10 +1,10 @@
 import React from 'react'
-import { ExternalLink } from 'lucide-react'
+import { ArrowUpRight } from '../../assets/icons'
 
 export default function DataSourceCard({ icon, label, badges, badgeMore, externalLink, overlay, onClick }) {
   return (
     <button
-      className="flex flex-col justify-end bg-card border border-border rounded-lg p-4 min-h-[108px] cursor-pointer text-left font-sans transition-all gap-3 hover:shadow-[0_2px_8px_rgba(0,0,0,0.1)] hover:border-input"
+      className="flex flex-col justify-end bg-card rounded-lg p-4 min-h-[108px] cursor-pointer text-left font-sans transition-all gap-3 shadow-[inset_0_0_0_1px_var(--border)] hover:shadow-[inset_0_0_0_2px_var(--primary),0_2px_8px_rgba(0,0,0,0.1)]"
       onClick={onClick}
     >
       {icon && (
@@ -24,8 +24,8 @@ export default function DataSourceCard({ icon, label, badges, badgeMore, externa
         </div>
       )}
       <div className="flex items-center gap-1.5">
-        <span className="text-[13px] font-semibold text-foreground">{label}</span>
-        {externalLink && <ExternalLink size={12} className="text-primary" />}
+        <span className="text-sm font-semibold text-foreground">{label}</span>
+        {externalLink && <ArrowUpRight size={12} className="text-primary" />}
       </div>
     </button>
   )

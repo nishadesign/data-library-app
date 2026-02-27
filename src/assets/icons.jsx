@@ -92,6 +92,21 @@ export const SlackConnectorIcon = ({ size = 24, ...props }) => (
   </svg>
 )
 
+export const RetrieverIcon = ({ size = 24, ...props }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
+    <circle cx="12" cy="12" r="12" fill="#066AFE"/>
+    <path d="M8 5.5h5.5L17 9v9.5a1 1 0 01-1 1H8a1 1 0 01-1-1V6.5a1 1 0 011-1z" fill="white"/>
+    <path d="M13.5 5.5V9H17" fill="white" stroke="white" strokeWidth="0.5" strokeLinejoin="round"/>
+    <path d="M9.5 13l2 2.5L14.5 11" stroke="#066AFE" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+)
+
+export const ArrowUpRight = ({ size = 24, ...props }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
+    <path d="M6 18L18 6M18 6H10M18 6V14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+)
+
 export const UserAvatar = ({ size = 28, ...props }) => (
   <svg width={size} height={size} viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg" {...props}>
     <circle cx="14" cy="14" r="14" fill="#032D60"/>

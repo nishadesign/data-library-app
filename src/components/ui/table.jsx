@@ -5,7 +5,7 @@ const Table = React.forwardRef(({ className, ...props }, ref) => (
   <div className="relative w-full overflow-auto">
     <table
       ref={ref}
-      className={cn("w-full caption-bottom text-[13px] font-sans border-collapse", className)}
+      className={cn("w-full caption-bottom text-sm font-sans border-collapse", className)}
       {...props}
     />
   </div>

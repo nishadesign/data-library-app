@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
-import { ChevronDown, ExternalLink, Check, Ban } from 'lucide-react'
+import { ChevronDown, Check, Ban } from 'lucide-react'
+import { ArrowUpRight } from '../../assets/icons'
 import { Card } from '../ui/card'
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '../ui/collapsible'
 
@@ -46,7 +47,7 @@ export default function StatusCard({ steps }) {
 
         <CollapsibleContent>
           <div className="px-6 pb-6">
-            <p className="text-[13px] text-foreground leading-[1.55] m-0 mb-6 font-sans">
+            <p className="text-sm text-foreground leading-[1.55] m-0 mb-6 font-sans">
               Data processing may take several minutes. You can check back later! If you add or
               update data in your this library, your search index will automatically refresh.
             </p>
@@ -64,23 +65,40 @@ export default function StatusCard({ steps }) {
                     </span>
 
                     {step.status === 'inProgress' && step.description && (
-                      <span className="text-[13px] font-sans leading-snug text-transparent bg-clip-text bg-[length:200%_100%] bg-[linear-gradient(90deg,var(--muted-foreground)_35%,var(--input)_48%,var(--border)_50%,var(--input)_52%,var(--muted-foreground)_65%)] animate-shimmer">{step.description}</span>
+                      <span className="text-sm font-sans leading-snug text-transparent bg-clip-text bg-[length:200%_100%] bg-[linear-gradient(90deg,var(--muted-foreground)_35%,var(--input)_48%,var(--border)_50%,var(--input)_52%,var(--muted-foreground)_65%)] animate-shimmer">{step.description}</span>
                     )}
 
-                    {step.status === 'ready' && step.link && (
-                      <a href={step.link.href || '#'} className="text-[13px] text-primary font-sans no-underline inline-flex items-center gap-1 font-normal hover:underline">
+                    {step.status === 'ready' && step.readyDescription && (
+                      <span className="text-sm text-muted-foreground font-sans leading-snug">
+                        {step.readyDescription}
+                      </span>
+                    )}
+
+                    {step.status === 'ready' && step.links && (
+                      <div className="flex items-center gap-3">
+                        {step.links.map((link, li) => (
+                          <a key={li} href={link.href || '#'} className="text-sm text-primary font-sans no-underline inline-flex items-center gap-1 font-normal hover:underline">
+                            {link.label}
+                            <ArrowUpRight size={11} />
+                          </a>
+                        ))}
+                      </div>
+                    )}
+
+                    {step.status === 'ready' && step.link && !step.links && (
+                      <a href={step.link.href || '#'} className="text-sm text-primary font-sans no-underline inline-flex items-center gap-1 font-normal hover:underline">
                         {step.link.label}
-                        <ExternalLink size={11} />
+                        <ArrowUpRight size={11} />
                       </a>
                     )}
 
                     {step.status === 'error' && (
                       <div className="flex items-center gap-2">
                         {step.description && (
-                          <span className="text-[13px] text-muted-foreground font-sans leading-snug">{step.description}</span>
+                          <span className="text-sm text-muted-foreground font-sans leading-snug">{step.description}</span>
                         )}
                         {step.onRetry && (
-                          <button className="text-[13px] text-primary font-sans font-semibold bg-transparent border-none cursor-pointer p-0 hover:underline" onClick={step.onRetry}>
+                          <button className="text-sm text-primary font-sans font-semibold bg-transparent border-none cursor-pointer p-0 hover:underline" onClick={step.onRetry}>
                             Retry
                           </button>
                         )}

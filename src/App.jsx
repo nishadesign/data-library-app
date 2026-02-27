@@ -11,6 +11,7 @@ import { TooltipProvider } from './components/ui/tooltip'
 export default function App() {
   const [activeTab, setActiveTab] = useState('dataLibraries')
   const [savedLibrary, setSavedLibrary] = useState(null)
+  const [refreshKey, setRefreshKey] = useState(0)
 
   function handleNewLibrary() {
     setActiveTab('newLibrary')
@@ -18,12 +19,18 @@ export default function App() {
 
   function handleBackToLibraries() {
     setActiveTab('dataLibraries')
+    setRefreshKey(k => k + 1)
   }
 
   const handleSaveLibrary = useCallback((libraryData) => {
     setSavedLibrary(libraryData)
     setActiveTab('libraryView')
   }, [])
+
+  function handleViewLibrary(library) {
+    setSavedLibrary(library)
+    setActiveTab('libraryView')
+  }
 
   function handleEditLibrary() {
     setActiveTab('newLibrary')
@@ -44,21 +51,22 @@ export default function App() {
         />
         <div className="flex flex-1 overflow-hidden">
           <Sidebar />
-          <TabsContent value="dataLibraries" className="flex-1">
-            <MainContent onNewLibrary={handleNewLibrary} />
+          <TabsContent value="dataLibraries" className="flex-1 h-full">
+            <MainContent onNewLibrary={handleNewLibrary} onViewLibrary={handleViewLibrary} refreshKey={refreshKey} />
           </TabsContent>
-          <TabsContent value="newLibrary" className="flex-1">
+          <TabsContent value="newLibrary" className="flex-1 h-full">
             <LibraryDetail
               onCancel={handleBackToLibraries}
               onSave={handleSaveLibrary}
             />
           </TabsContent>
           {savedLibrary && (
-            <TabsContent value="libraryView" className="flex-1">
+            <TabsContent value="libraryView" className="flex-1 h-full">
               <LibraryView
                 library={savedLibrary}
                 onEdit={handleEditLibrary}
                 onLibraryUpdate={handleLibraryUpdate}
+                onCancel={handleBackToLibraries}
               />
             </TabsContent>
           )}
