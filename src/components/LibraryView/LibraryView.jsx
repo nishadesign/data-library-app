@@ -270,6 +270,17 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
           prev.map(f => unsavedIds.includes(f.id) ? { ...f, status: 'Uploading' } : f)
         )
 
+        const hadSearchIndex = pipelineSteps.some(s => s.name === 'Creating search index' && s.status === 'ready')
+        const uploadingSteps = PIPELINE_TIMINGS.map(s => ({ name: s.name, status: 'default', description: '' }))
+        const reuploadSkip = new Set(['Creating search index', 'Setting up retriever', 'Building agent tool'])
+        if (hadSearchIndex) {
+          uploadingSteps.forEach(s => { if (reuploadSkip.has(s.name)) s.status = 'ready' })
+        }
+        uploadingSteps[0].status = 'inProgress'
+        uploadingSteps[0].description = `0 out of ${unsavedIds.length} files uploaded`
+        setPipelineSteps([...uploadingSteps])
+        setPipelineOverall('inProgress')
+
         if (rawNewFiles.length > 0) {
           await api.uploadFiles(library.id, rawNewFiles)
         }
@@ -285,7 +296,6 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
 
         if (sseFailedRef.current) {
           const totalFiles = fresh.files?.length || 1
-          const hadSearchIndex = pipelineSteps.some(s => s.name === 'Creating search index' && s.status === 'ready')
           runClientPipeline(totalFiles, hadSearchIndex)
         }
       }
