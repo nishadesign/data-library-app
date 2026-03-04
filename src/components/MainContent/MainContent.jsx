@@ -48,6 +48,8 @@ export default function MainContent({ onNewLibrary, onViewLibrary, refreshKey })
   const [loading, setLoading] = useState(true)
   const [selected, setSelected] = useState({})
   const [searchQuery, setSearchQuery] = useState('')
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [deleting, setDeleting] = useState(false)
 
   useEffect(() => {
     api.listLibraries()
@@ -86,11 +88,14 @@ export default function MainContent({ onNewLibrary, onViewLibrary, refreshKey })
   }
 
   async function handleRemoveSelected() {
+    setDeleting(true)
     for (const id of selectedIds) {
       try { await api.deleteLibrary(id) } catch {}
     }
+    setShowDeleteConfirm(false)
     setSelected({})
     api.listLibraries().then(setLibraries).catch(() => setLibraries([]))
+    setDeleting(false)
   }
 
   return (
@@ -275,10 +280,44 @@ export default function MainContent({ onNewLibrary, onViewLibrary, refreshKey })
           <Button variant="ghost" className="h-auto px-0 text-foreground hover:bg-transparent" onClick={() => setSelected({})}>
             Cancel
           </Button>
-          <Button variant="destructive" onClick={handleRemoveSelected}>
+          <Button variant="destructive" onClick={() => setShowDeleteConfirm(true)}>
             <Trash2 size={14} />
             Delete Libraries
           </Button>
+        </div>
+      )}
+
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4" onClick={() => !deleting && setShowDeleteConfirm(false)}>
+          <div
+            className="w-full max-w-md rounded-xl border border-border bg-background p-6 shadow-xl"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-libraries-title"
+            onClick={e => e.stopPropagation()}
+          >
+            <h3 id="delete-libraries-title" className="m-0 text-lg font-semibold text-foreground font-sans">
+              Delete {selectedIds.length > 1 ? 'libraries' : 'library'}?
+            </h3>
+            <p className="mt-2 mb-0 text-sm text-muted-foreground leading-relaxed">
+              {selectedIds.length > 1
+                ? `This will permanently delete ${selectedIds.length} selected libraries. This action cannot be undone.`
+                : 'This will permanently delete the selected library. This action cannot be undone.'}
+            </p>
+            <div className="mt-6 flex items-center justify-end gap-2">
+              <Button
+                variant="ghost"
+                className="h-9"
+                onClick={() => setShowDeleteConfirm(false)}
+                disabled={deleting}
+              >
+                Cancel
+              </Button>
+              <Button variant="destructive" className="h-9" onClick={handleRemoveSelected} disabled={deleting}>
+                {deleting ? 'Deleting...' : 'Delete'}
+              </Button>
+            </div>
+          </div>
         </div>
       )}
     </main>
