@@ -38,7 +38,7 @@ const PIPELINE_TIMINGS = [
   { name: 'Indexing data', duration: 5000, description: "We're structuring your data so it's easy to search, manage, and use over time." },
 ]
 
-function AgentToolCard({ libraryName, defaultOpen = false, autoExpandSignal = 0 }) {
+function AgentToolCard({ libraryName, defaultOpen = false, autoExpandSignal = 0, forceOpen = false, showContent = true }) {
   const [open, setOpen] = useState(defaultOpen)
 
   useEffect(() => {
@@ -47,9 +47,15 @@ function AgentToolCard({ libraryName, defaultOpen = false, autoExpandSignal = 0 
     }
   }, [autoExpandSignal])
 
+  useEffect(() => {
+    if (forceOpen) {
+      setOpen(true)
+    }
+  }, [forceOpen])
+
   return (
     <Collapsible open={open} onOpenChange={setOpen}>
-      <Card className="mb-4 overflow-hidden p-0">
+      <Card className="mb-4 overflow-hidden rounded-xl p-0">
         <CollapsibleTrigger className="flex items-center gap-2 py-4 px-6 cursor-pointer bg-transparent border-none w-full text-left font-sans hover:opacity-85">
           <span className={`flex items-center transition-transform duration-200 ${open ? 'rotate-0' : '-rotate-90'}`}>
             <ChevronDown size={12} />
@@ -58,20 +64,55 @@ function AgentToolCard({ libraryName, defaultOpen = false, autoExpandSignal = 0 
         </CollapsibleTrigger>
 
         <CollapsibleContent>
-          <div className="px-6 pb-5">
-            <p className="text-sm text-foreground leading-[1.55] m-0 mb-3 font-sans">
-              To use this data, add the retriever action to the topic
-            </p>
-            <a href="#" className="inline-flex items-center gap-2 text-sm text-primary font-sans font-normal no-underline hover:underline">
-              <RetrieverIcon size={18} />
-              Get information from {libraryName}
-              <ArrowUpRight size={11} />
-            </a>
-          </div>
+          {showContent ? (
+            <div className="px-6 pb-5">
+              <p className="text-sm text-foreground leading-[1.55] m-0 mb-3 font-sans">
+                To use this data, add the retriever action to the topic
+              </p>
+              <a href="#" className="inline-flex items-center gap-2 text-sm text-primary font-sans font-normal no-underline hover:underline">
+                <RetrieverIcon size={18} />
+                Get information from {libraryName}
+                <ArrowUpRight size={11} />
+              </a>
+            </div>
+          ) : (
+            <div className="px-6 pb-5" />
+          )}
         </CollapsibleContent>
       </Card>
     </Collapsible>
   )
+}
+
+const DEMO_READY_STEPS = [
+  { name: 'Uploading files', status: 'ready' },
+  { name: 'Creating search index', status: 'ready' },
+  { name: 'Setting up retriever', status: 'ready' },
+  { name: 'Building agent tool', status: 'ready' },
+  { name: 'Indexing data', status: 'ready' },
+]
+
+function getDemoFailedSteps() {
+  return [
+    { name: 'Uploading files', status: 'ready' },
+    {
+      name: 'Creating search index',
+      status: 'error',
+      description: 'Search Index could not be created at this time',
+      retryLabel: 'Rebuild',
+      onRetry: () => {},
+    },
+    { name: 'Setting up retriever', status: 'default' },
+    { name: 'Building agent tool', status: 'default' },
+    { name: 'Indexing data', status: 'default' },
+  ]
+}
+
+function getStatusVariant(displayStatus) {
+  if (displayStatus === 'Ready') return 'success'
+  if (displayStatus === 'Processing') return 'inProgress'
+  if (displayStatus === 'Failed') return 'destructive'
+  return 'default'
 }
 
 export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel, autoExpandStatusOnEnter = false }) {
@@ -92,6 +133,9 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
   const scrollRef = useRef(null)
   const pipelineCancelRef = useRef(null)
   const prevAgentToolReadyRef = useRef(false)
+  const isDemoReady = Boolean(library?.isDemo && library?.demoState === 'ready')
+  const isDemoFailed = Boolean(library?.isDemo && library?.demoState === 'failed')
+  const isReadOnlyDemo = Boolean(library?.isDemo)
 
   const runClientPipeline = useCallback(async (fileCount, skipReady, uploadAlreadyDone) => {
     if (pipelineCancelRef.current) pipelineCancelRef.current.cancelled = true
@@ -172,6 +216,7 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
   }, [editing, metaCollapsed, pipelineOverall])
 
   function startEditing() {
+    if (isReadOnlyDemo) return
     setEditDraft({
       libraryName: library.libraryName || '',
       apiName: library.apiName || '',
@@ -209,9 +254,30 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
     setSaving(false)
   }, [library?.id])
 
+  useEffect(() => {
+    if (isDemoReady) {
+      setPipelineSteps(DEMO_READY_STEPS)
+      setPipelineOverall('ready')
+      setIndexingFileIndex(library.files?.length || 0)
+      return
+    }
+
+    if (isDemoFailed) {
+      setPipelineSteps(getDemoFailedSteps())
+      setPipelineOverall('failed')
+      setIndexingFileIndex(-1)
+      return
+    }
+
+    setPipelineOverall('idle')
+    setPipelineSteps(DEFAULT_STEPS)
+    setIndexingFileIndex(-1)
+  }, [isDemoFailed, isDemoReady, library?.files?.length, library?.id])
+
 
   useEffect(() => {
     if (!library?.id) return
+    if (library?.isDemo) return
     sseFailedRef.current = false
 
     const unsubscribe = api.subscribePipelineStatus(
@@ -240,12 +306,13 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
     )
 
     return unsubscribe
-  }, [library?.id, library?.status, onLibraryUpdate, runClientPipeline])
+  }, [library?.id, library?.isDemo, library?.status, onLibraryUpdate, runClientPipeline])
 
   const files = library.files || []
-  const statusCardKey = `${library?.id || 'library'}-${autoExpandStatusOnEnter ? 'open' : 'closed'}`
+  const statusCardKey = `${library?.id || 'library'}-${(autoExpandStatusOnEnter || isDemoReady) ? 'open' : 'closed'}`
 
   function handleAddFiles(fileList) {
+    if (isReadOnlyDemo) return
     const added = Array.from(fileList)
     setRawNewFiles(prev => [...prev, ...added])
     setNewFiles(prev => [
@@ -262,6 +329,7 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
   const allFileIds = [...files.map(f => f.id), ...newFiles.map(f => f.id)]
 
   function toggleFileSelected(id) {
+    if (isReadOnlyDemo) return
     setSelectedFiles(prev => {
       const next = new Set(prev)
       next.has(id) ? next.delete(id) : next.add(id)
@@ -270,6 +338,7 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
   }
 
   function toggleAllFiles() {
+    if (isReadOnlyDemo) return
     if (selectedFiles.size === allFileIds.length) {
       setSelectedFiles(new Set())
     } else {
@@ -278,6 +347,7 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
   }
 
   function handleRemoveFiles() {
+    if (isReadOnlyDemo) return
     setNewFiles(prev => prev.filter(f => !selectedFiles.has(f.id)))
     setRawNewFiles(prev => {
       const newFileIds = newFiles.filter(f => selectedFiles.has(f.id)).map(f => f.name)
@@ -287,6 +357,7 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
   }
 
   async function handleSave() {
+    if (isReadOnlyDemo) return
     setSaving(true)
 
     try {
@@ -371,10 +442,11 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
 
   const displayStatus = pipelineOverall === 'ready' ? 'Ready'
     : pipelineOverall === 'inProgress' ? 'Processing'
+    : pipelineOverall === 'failed' ? 'Failed'
     : (library.status || 'Draft')
   const hasUnsavedNewFiles = newFiles.some(file => file.status === '')
-  const saveDisabled = saving || !hasUnsavedNewFiles || selectedFiles.size > 0
-  const showAddFilesTooltip = !saving && selectedFiles.size === 0 && !hasUnsavedNewFiles
+  const saveDisabled = isReadOnlyDemo || saving || !hasUnsavedNewFiles || selectedFiles.size > 0
+  const showAddFilesTooltip = !isReadOnlyDemo && !saving && selectedFiles.size === 0 && !hasUnsavedNewFiles
 
   const agentToolReady = pipelineSteps.some(
     s => s.name === 'Building agent tool' && s.status === 'ready'
@@ -488,12 +560,12 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
               <div className="flex items-center gap-2.5">
                 <h1 className={`font-bold text-foreground m-0 font-sans transition-all duration-200 ${metaCollapsed ? 'text-base' : 'text-[22px]'}`}>{library.libraryName}</h1>
                 {metaCollapsed && (
-                  <Badge variant={displayStatus === 'Ready' ? 'success' : displayStatus === 'Processing' ? 'inProgress' : 'default'}>
+                  <Badge variant={getStatusVariant(displayStatus)}>
                     {displayStatus}
                   </Badge>
                 )}
               </div>
-              <Button variant="link" onClick={startEditing}>Edit</Button>
+              {!isReadOnlyDemo && <Button variant="link" onClick={startEditing}>Edit</Button>}
             </div>
 
             {!metaCollapsed && (
@@ -513,7 +585,7 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
                   </div>
                   <div className="flex flex-col gap-0.5">
                     <Label className="font-normal">Status</Label>
-                    <Badge variant={displayStatus === 'Ready' ? 'success' : displayStatus === 'Processing' ? 'inProgress' : 'default'}>
+                    <Badge variant={getStatusVariant(displayStatus)}>
                       {displayStatus}
                     </Badge>
                   </div>
@@ -546,14 +618,16 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
           libraryName={library.libraryName}
           defaultOpen={false}
           autoExpandSignal={agentToolAutoExpandSignal}
+          forceOpen={isDemoReady}
+          showContent={!isDemoFailed}
         />
 
         {/* Status card */}
-        <StatusCard key={statusCardKey} steps={enrichedSteps} defaultOpen={autoExpandStatusOnEnter} />
+        <StatusCard key={statusCardKey} steps={enrichedSteps} defaultOpen={autoExpandStatusOnEnter || isDemoReady} />
 
         {/* Files card */}
         <Collapsible open={filesOpen} onOpenChange={setFilesOpen}>
-          <Card className="overflow-hidden p-0">
+          <Card className="overflow-hidden rounded-xl p-0">
             <div className="flex items-center py-4 px-6">
               <CollapsibleTrigger className="flex items-center gap-2 flex-1 cursor-pointer bg-transparent border-none p-0 font-sans hover:opacity-85">
                 <span className={`flex items-center transition-transform duration-200 ${filesOpen ? 'rotate-0' : '-rotate-90'}`}>
@@ -570,7 +644,7 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
                     className="border-none outline-none text-sm font-sans text-foreground flex-1 bg-transparent placeholder:text-muted-foreground"
                   />
                 </div>
-                <Button variant="neutral" onClick={() => fileInputRef.current?.click()}>
+                <Button variant="neutral" onClick={() => fileInputRef.current?.click()} disabled={isReadOnlyDemo}>
                   <Plus size={12} />
                   Add Files
                 </Button>
@@ -599,6 +673,7 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
                           aria-label="Select all"
                           checked={allFileIds.length > 0 && selectedFiles.size === allFileIds.length}
                           onCheckedChange={toggleAllFiles}
+                          disabled={isReadOnlyDemo}
                         />
                       </TableHead>
                       <TableHead>
@@ -627,6 +702,7 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
                             aria-label={`Select ${file.name}`}
                             checked={selectedFiles.has(file.id)}
                             onCheckedChange={() => toggleFileSelected(file.id)}
+                            disabled={isReadOnlyDemo}
                           />
                         </TableCell>
                         <TableCell>{file.name}</TableCell>
@@ -652,6 +728,7 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
                             aria-label={`Select ${file.name}`}
                             checked={selectedFiles.has(file.id)}
                             onCheckedChange={() => toggleFileSelected(file.id)}
+                            disabled={isReadOnlyDemo}
                           />
                         </TableCell>
                         <TableCell>{file.name}</TableCell>
