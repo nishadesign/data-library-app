@@ -216,7 +216,7 @@ export default function LibraryDetail({ onCancel, onSave }) {
             onCheckedChange={setUseAI}
           />
           <Label htmlFor="useAI" className="text-sm text-foreground font-normal cursor-pointer">
-            Use AI to process content, extract text, tables, images and structures from files.
+            Use Intelligent Context to process content, extract text, tables, images and structures from files.
           </Label>
         </div>
       </Card>
@@ -237,7 +237,7 @@ export default function LibraryDetail({ onCancel, onSave }) {
               </CollapsibleTrigger>
               {pendingFiles.length > 0 && filesOpen && (
                   <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-2 border border-input rounded px-3 py-[5px] bg-background w-40 focus-within:border-ring focus-within:ring-1 focus-within:ring-ring">
+                  <div className="flex items-center gap-2 border border-input rounded-full px-3 py-[5px] bg-background w-40 focus-within:border-ring focus-within:ring-1 focus-within:ring-ring">
                     <Search size={14} className="text-muted-foreground" />
                     <input type="text" placeholder="Search..." className="border-none outline-none text-sm font-sans text-foreground flex-1 bg-transparent placeholder:text-muted-foreground" />
                   </div>
@@ -251,10 +251,6 @@ export default function LibraryDetail({ onCancel, onSave }) {
 
             <CollapsibleContent>
               <div className="px-6 pb-5">
-                <p className="text-xs text-muted-foreground m-0 mb-3 font-sans">
-                  Add files up to 1000 files &middot; Supports PDF, HTML, .TXT
-                </p>
-
                 {pendingFiles.length === 0 ? (
                   <div
                     className={`border-2 border-dashed rounded-md min-h-[140px] flex flex-col items-center justify-center cursor-pointer transition-colors mb-3 ${
@@ -333,14 +329,11 @@ export default function LibraryDetail({ onCancel, onSave }) {
           </Card>
         </Collapsible>
 
-        <p className="text-xs text-muted-foreground mt-4 mb-0 font-sans">
-          Add files up to 1000 files &middot; Supports PDF, HTML, .TXT
-        </p>
       </div>
 
       {/* Footer */}
       <div className="flex justify-center gap-3 py-4 px-6 bg-background border-t border-border shrink-0">
-        <Button variant="neutral" onClick={onCancel}>
+        <Button variant="ghost" className="h-auto px-0 text-foreground hover:bg-transparent" onClick={onCancel}>
           Cancel
         </Button>
         {selectedFiles.size > 0 ? (

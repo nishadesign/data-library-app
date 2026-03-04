@@ -13,6 +13,7 @@ export default function App() {
   const [savedLibrary, setSavedLibrary] = useState(null)
   const [refreshKey, setRefreshKey] = useState(0)
   const [autoExpandStatusOnEnter, setAutoExpandStatusOnEnter] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
 
   function handleNewLibrary() {
     setActiveTab('newLibrary')
@@ -54,7 +55,7 @@ export default function App() {
           libraryName={savedLibrary?.libraryName}
         />
         <div className="flex flex-1 overflow-hidden">
-          <Sidebar />
+          <Sidebar collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed(prev => !prev)} />
           <TabsContent value="dataLibraries" className="flex-1 h-full">
             <MainContent onNewLibrary={handleNewLibrary} onViewLibrary={handleViewLibrary} refreshKey={refreshKey} />
           </TabsContent>
