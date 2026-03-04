@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { ChevronDown, Ban } from 'lucide-react'
+import { ChevronDown } from 'lucide-react'
 import { ArrowUpRight } from '../../assets/icons'
 import { Card } from '../ui/card'
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '../ui/collapsible'
@@ -12,16 +12,12 @@ function StepDot({ status }) {
     error: 'bg-destructive',
   }
   const isInProgress = status === 'inProgress'
-  const isError = status === 'error'
 
   return (
     <div className={`w-3 h-3 rounded-full shrink-0 flex items-center justify-center relative z-[1] transition-[background-color,border-color,box-shadow,transform,opacity] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${dotStyles[status] || dotStyles.default}`}>
       <span className={`absolute inset-0 rounded-full bg-success/30 animate-pulse-ring transition-opacity duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${isInProgress ? 'opacity-100' : 'opacity-0'}`} />
       <span className={`absolute inset-0 flex items-center justify-center transition-[opacity,transform] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${isInProgress ? 'opacity-100 scale-100' : 'opacity-0 scale-75'}`}>
         <span className="w-1.5 h-1.5 rounded-full bg-success" />
-      </span>
-      <span className={`absolute inset-0 flex items-center justify-center transition-[opacity,transform] duration-300 ease-out ${isError ? 'opacity-100 scale-100' : 'opacity-0 scale-90'}`}>
-        <Ban size={8} className="text-white" strokeWidth={2} />
       </span>
     </div>
   )
@@ -50,7 +46,7 @@ export default function StatusCard({ steps, defaultOpen = false }) {
 
   return (
     <Collapsible open={open} onOpenChange={setOpen}>
-      <Card className="mb-4 overflow-hidden p-0">
+      <Card className="mb-4 overflow-hidden rounded-xl p-0">
         <CollapsibleTrigger className="flex items-center gap-2 py-4 px-6 cursor-pointer bg-transparent border-none w-full text-left font-sans hover:opacity-85">
           <span className={`flex items-center transition-transform duration-200 ${open ? 'rotate-0' : '-rotate-90'}`}>
             <ChevronDown size={12} />
@@ -114,7 +110,7 @@ export default function StatusCard({ steps, defaultOpen = false }) {
                           )}
                           {step.onRetry && (
                             <button className="text-sm text-primary font-sans font-semibold bg-transparent border-none cursor-pointer p-0 hover:underline shrink-0" onClick={step.onRetry}>
-                              Retry
+                              {step.retryLabel || 'Retry'}
                             </button>
                           )}
                         </div>

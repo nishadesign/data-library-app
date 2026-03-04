@@ -33,7 +33,7 @@ export default function App() {
 
   function handleViewLibrary(library) {
     setSavedLibrary(library)
-    setAutoExpandStatusOnEnter(false)
+    setAutoExpandStatusOnEnter(Boolean(library?.isDemo && library?.demoState === 'ready'))
     setActiveTab('libraryView')
   }
 

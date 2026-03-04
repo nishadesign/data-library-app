@@ -59,6 +59,7 @@ export default function MainContent({ onNewLibrary, onViewLibrary, refreshKey })
   }, [refreshKey])
 
   const hasLibraries = libraries.length > 0
+  const hasUserLibraries = libraries.some(lib => !lib.isDemo)
 
   const filteredLibraries = libraries.filter(lib => {
     if (!searchQuery.trim()) return true
@@ -70,11 +71,13 @@ export default function MainContent({ onNewLibrary, onViewLibrary, refreshKey })
     )
   })
 
-  const selectedIds = Object.keys(selected).filter(id => selected[id])
-  const allSelected = filteredLibraries.length > 0 && filteredLibraries.every(l => selected[l.id])
+  const selectableLibraries = filteredLibraries.filter(lib => !lib.isDemo)
+  const selectedIds = selectableLibraries.filter(lib => selected[lib.id]).map(lib => lib.id)
+  const allSelected = selectableLibraries.length > 0 && selectableLibraries.every(l => selected[l.id])
 
-  function toggleSelect(id) {
-    setSelected(prev => ({ ...prev, [id]: !prev[id] }))
+  function toggleSelect(library) {
+    if (library.isDemo) return
+    setSelected(prev => ({ ...prev, [library.id]: !prev[library.id] }))
   }
 
   function toggleSelectAll() {
@@ -82,7 +85,7 @@ export default function MainContent({ onNewLibrary, onViewLibrary, refreshKey })
       setSelected({})
     } else {
       const next = {}
-      filteredLibraries.forEach(l => { next[l.id] = true })
+      selectableLibraries.forEach(l => { next[l.id] = true })
       setSelected(next)
     }
   }
@@ -179,61 +182,9 @@ export default function MainContent({ onNewLibrary, onViewLibrary, refreshKey })
           </a>
         </p>
 
-        {/* Library list table */}
-        {hasLibraries && (
-          <div className="mb-8 border border-border rounded-lg overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-9 text-center">
-                    <Checkbox aria-label="Select all" checked={allSelected} onChange={toggleSelectAll} />
-                  </TableHead>
-                  <TableHead><span className="flex items-center gap-1">Name <ArrowUpDown size={10} className="text-muted-foreground" /></span></TableHead>
-                  <TableHead><span className="flex items-center gap-1">Type <ArrowUpDown size={10} className="text-muted-foreground" /></span></TableHead>
-                  <TableHead><span className="flex items-center gap-1">Status <ArrowUpDown size={10} className="text-muted-foreground" /></span></TableHead>
-                  <TableHead><span className="flex items-center gap-1">Created By <ArrowUpDown size={10} className="text-muted-foreground" /></span></TableHead>
-                  <TableHead><span className="flex items-center gap-1">Created On <ArrowUpDown size={10} className="text-muted-foreground" /></span></TableHead>
-                  <TableHead><span className="flex items-center gap-1">Agents <ArrowUpDown size={10} className="text-muted-foreground" /></span></TableHead>
-                  <TableHead className="w-9" />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredLibraries.map((lib) => (
-                  <TableRow
-                    key={lib.id}
-                    className="cursor-pointer hover:bg-muted/50"
-                    onClick={() => onViewLibrary?.(lib)}
-                  >
-                    <TableCell className="text-center" onClick={e => e.stopPropagation()}>
-                      <Checkbox
-                        aria-label={`Select ${lib.libraryName}`}
-                        checked={!!selected[lib.id]}
-                        onChange={() => toggleSelect(lib.id)}
-                      />
-                    </TableCell>
-                    <TableCell className="font-normal">{lib.libraryName}</TableCell>
-                    <TableCell>Files</TableCell>
-                    <TableCell>
-                      <StatusIndicator status={lib.status} />
-                    </TableCell>
-                    <TableCell>{lib.files?.[0]?.uploadedBy || 'orgfarm-epic'}</TableCell>
-                    <TableCell>{formatDate(lib.createdAt)}</TableCell>
-                    <TableCell className="text-primary text-sm">
-                      {lib.agents || ''}
-                    </TableCell>
-                    <TableCell>
-                      <ChevronRight size={14} className="text-muted-foreground" />
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        )}
-
-        {/* Data source cards — only show when no libraries exist */}
-        {!hasLibraries && (
-          <div className="grid grid-cols-[repeat(4,minmax(0,1fr))] gap-3 max-[900px]:grid-cols-2">
+        {/* Data source cards — keep for first-time users until they create their first ADL */}
+        {!hasUserLibraries && (
+          <div className="mb-8 grid grid-cols-[repeat(4,minmax(0,1fr))] gap-3 max-[900px]:grid-cols-2">
             <DataSourceCard
               icon={<img src={filesIcon} alt="Files" width={28} height={28} />}
               label="Upload Files"
@@ -270,6 +221,59 @@ export default function MainContent({ onNewLibrary, onViewLibrary, refreshKey })
               label="Use MCP servers"
               externalLink
             />
+          </div>
+        )}
+
+        {/* Library list table */}
+        {hasLibraries && (
+          <div className="mb-8 border border-border rounded-lg overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-9 text-center">
+                    <Checkbox aria-label="Select all" checked={allSelected} onChange={toggleSelectAll} />
+                  </TableHead>
+                  <TableHead><span className="flex items-center gap-1">Name <ArrowUpDown size={10} className="text-muted-foreground" /></span></TableHead>
+                  <TableHead><span className="flex items-center gap-1">Type <ArrowUpDown size={10} className="text-muted-foreground" /></span></TableHead>
+                  <TableHead><span className="flex items-center gap-1">Status <ArrowUpDown size={10} className="text-muted-foreground" /></span></TableHead>
+                  <TableHead><span className="flex items-center gap-1">Created By <ArrowUpDown size={10} className="text-muted-foreground" /></span></TableHead>
+                  <TableHead><span className="flex items-center gap-1">Created On <ArrowUpDown size={10} className="text-muted-foreground" /></span></TableHead>
+                  <TableHead><span className="flex items-center gap-1">Agents <ArrowUpDown size={10} className="text-muted-foreground" /></span></TableHead>
+                  <TableHead className="w-9" />
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredLibraries.map((lib) => (
+                  <TableRow
+                    key={lib.id}
+                    className="cursor-pointer hover:bg-muted/50"
+                    onClick={() => onViewLibrary?.(lib)}
+                  >
+                    <TableCell className="text-center" onClick={e => e.stopPropagation()}>
+                      <Checkbox
+                        aria-label={`Select ${lib.libraryName}`}
+                        checked={!!selected[lib.id]}
+                        onChange={() => toggleSelect(lib)}
+                        disabled={lib.isDemo}
+                      />
+                    </TableCell>
+                    <TableCell className="font-normal">{lib.libraryName}</TableCell>
+                    <TableCell>Files</TableCell>
+                    <TableCell>
+                      <StatusIndicator status={lib.status} />
+                    </TableCell>
+                    <TableCell>{lib.files?.[0]?.uploadedBy || 'orgfarm-epic'}</TableCell>
+                    <TableCell>{formatDate(lib.createdAt)}</TableCell>
+                    <TableCell className="text-primary text-sm">
+                      {lib.agents || ''}
+                    </TableCell>
+                    <TableCell>
+                      <ChevronRight size={14} className="text-muted-foreground" />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </div>
         )}
       </div>
