@@ -8,6 +8,7 @@ import { Checkbox } from '../ui/checkbox'
 import { Switch } from '../ui/switch'
 import { Card } from '../ui/card'
 import { Label } from '../ui/label'
+import { Tooltip, TooltipTrigger, TooltipContent } from '../ui/tooltip'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../ui/table'
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '../ui/collapsible'
 import StatusCard from '../StatusCard/StatusCard'
@@ -191,6 +192,13 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
     return () => { if (pipelineCancelRef.current) pipelineCancelRef.current.cancelled = true }
   }, [])
 
+  useEffect(() => {
+    setNewFiles([])
+    setRawNewFiles([])
+    setSelectedFiles(new Set())
+    setSaving(false)
+  }, [library?.id])
+
 
   useEffect(() => {
     if (!library?.id) return
@@ -354,6 +362,9 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
   const displayStatus = pipelineOverall === 'ready' ? 'Ready'
     : pipelineOverall === 'inProgress' ? 'Processing'
     : (library.status || 'Draft')
+  const hasUnsavedNewFiles = newFiles.some(file => file.status === '')
+  const saveDisabled = saving || !hasUnsavedNewFiles || selectedFiles.size > 0
+  const showAddFilesTooltip = !saving && selectedFiles.size === 0 && !hasUnsavedNewFiles
 
   const agentToolReady = pipelineSteps.some(
     s => s.name === 'Building agent tool' && s.status === 'ready'
@@ -666,13 +677,25 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
         <Button variant="neutral" onClick={() => { if (editing) cancelEditing(); else onCancel?.(); }}>
           Cancel
         </Button>
-        {selectedFiles.size > 0 ? (
+        {selectedFiles.size > 0 && (
           <Button variant="destructive" onClick={handleRemoveFiles}>
             <Trash2 size={14} />
             Remove Files
           </Button>
+        )}
+        {showAddFilesTooltip ? (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="inline-flex">
+                <Button variant="brand" onClick={handleSave} disabled>
+                  Save
+                </Button>
+              </span>
+            </TooltipTrigger>
+            <TooltipContent>Add files to enable save</TooltipContent>
+          </Tooltip>
         ) : (
-          <Button variant="brand" onClick={handleSave} disabled={saving}>
+          <Button variant="brand" onClick={handleSave} disabled={saveDisabled}>
             {saving ? 'Saving...' : 'Save'}
           </Button>
         )}

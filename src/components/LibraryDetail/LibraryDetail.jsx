@@ -7,6 +7,7 @@ import { Checkbox } from '../ui/checkbox'
 import { Switch } from '../ui/switch'
 import { Card } from '../ui/card'
 import { Label } from '../ui/label'
+import { Tooltip, TooltipTrigger, TooltipContent } from '../ui/tooltip'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../ui/table'
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '../ui/collapsible'
 import StatusCard from '../StatusCard/StatusCard'
@@ -150,6 +151,9 @@ export default function LibraryDetail({ onCancel, onSave }) {
       setSaving(false)
     }
   }
+
+  const hasUnsavedPendingFiles = pendingFiles.some(file => file.status === '')
+  const saveDisabled = saving || !hasUnsavedPendingFiles
 
   return (
     <div className="flex-1 h-full bg-muted flex flex-col overflow-hidden">
@@ -345,9 +349,22 @@ export default function LibraryDetail({ onCancel, onSave }) {
             Remove Files
           </Button>
         ) : (
-          <Button variant="brand" onClick={handleSave} disabled={saving}>
-            {saving ? 'Saving...' : 'Save'}
-          </Button>
+          saveDisabled && !saving ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="inline-flex">
+                  <Button variant="brand" onClick={handleSave} disabled>
+                    Save
+                  </Button>
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>Add files to enable save</TooltipContent>
+            </Tooltip>
+          ) : (
+            <Button variant="brand" onClick={handleSave} disabled={saveDisabled}>
+              {saving ? 'Saving...' : 'Save'}
+            </Button>
+          )
         )}
       </div>
     </div>
