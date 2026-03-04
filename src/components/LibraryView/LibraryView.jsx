@@ -37,8 +37,14 @@ const PIPELINE_TIMINGS = [
   { name: 'Indexing data', duration: 5000, description: "We're structuring your data so it's easy to search, manage, and use over time." },
 ]
 
-function AgentToolCard({ libraryName }) {
-  const [open, setOpen] = useState(true)
+function AgentToolCard({ libraryName, defaultOpen = false, autoExpandSignal = 0 }) {
+  const [open, setOpen] = useState(defaultOpen)
+
+  useEffect(() => {
+    if (autoExpandSignal > 0) {
+      setOpen(true)
+    }
+  }, [autoExpandSignal])
 
   return (
     <Collapsible open={open} onOpenChange={setOpen}>
@@ -67,7 +73,7 @@ function AgentToolCard({ libraryName }) {
   )
 }
 
-export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel }) {
+export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel, autoExpandStatusOnEnter = false }) {
   const [filesOpen, setFilesOpen] = useState(true)
   const [useAI, setUseAI] = useState(true)
   const [pipelineSteps, setPipelineSteps] = useState(DEFAULT_STEPS)
@@ -80,9 +86,11 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
   const [metaCollapsed, setMetaCollapsed] = useState(false)
   const [editing, setEditing] = useState(false)
   const [editDraft, setEditDraft] = useState({})
+  const [agentToolAutoExpandSignal, setAgentToolAutoExpandSignal] = useState(0)
   const fileInputRef = useRef(null)
   const scrollRef = useRef(null)
   const pipelineCancelRef = useRef(null)
+  const prevAgentToolReadyRef = useRef(false)
 
   const runClientPipeline = useCallback(async (fileCount, skipReady, uploadAlreadyDone) => {
     if (pipelineCancelRef.current) pipelineCancelRef.current.cancelled = true
@@ -183,6 +191,7 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
     return () => { if (pipelineCancelRef.current) pipelineCancelRef.current.cancelled = true }
   }, [])
 
+
   useEffect(() => {
     if (!library?.id) return
     sseFailedRef.current = false
@@ -216,6 +225,7 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
   }, [library?.id, library?.status, onLibraryUpdate, runClientPipeline])
 
   const files = library.files || []
+  const statusCardKey = `${library?.id || 'library'}-${autoExpandStatusOnEnter ? 'open' : 'closed'}`
 
   function handleAddFiles(fileList) {
     const added = Array.from(fileList)
@@ -349,6 +359,13 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
     s => s.name === 'Building agent tool' && s.status === 'ready'
   )
 
+  useEffect(() => {
+    if (!prevAgentToolReadyRef.current && agentToolReady) {
+      setAgentToolAutoExpandSignal(s => s + 1)
+    }
+    prevAgentToolReadyRef.current = agentToolReady
+  }, [agentToolReady])
+
   const enrichedSteps = useMemo(() => {
     const fileCount = files.length
     const now = new Date()
@@ -380,7 +397,7 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
   return (
     <div className="flex-1 h-full bg-background flex flex-col overflow-hidden">
       {/* Sticky metadata card */}
-      <Card className={`px-6 shrink-0 rounded-none border-x-0 border-t-0 transition-all duration-200 ${metaCollapsed ? 'py-3' : 'p-5 pb-5'}`}>
+      <Card className={`px-6 shrink-0 rounded-none border-x-0 border-t-0 transition-all duration-200 ${metaCollapsed ? 'py-3' : 'p-5'}`}>
         {editing ? (
           <>
             <div className="flex flex-col gap-1.5 mb-4">
@@ -432,6 +449,17 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
                 placeholder="This description will be used by agent to decide when to call this data library..."
               />
             </div>
+
+            <div className="flex items-center gap-2.5 py-4 mt-4 -mx-6 px-6 border-t border-border opacity-60">
+              <Switch
+                id="useAIEdit"
+                checked={useAI}
+                disabled
+              />
+              <Label htmlFor="useAIEdit" className="text-sm text-foreground font-normal cursor-default">
+                Use AI to process content, extract text, tables, images and structures from files.
+              </Label>
+            </div>
           </>
         ) : (
           <>
@@ -468,6 +496,10 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
                       {displayStatus}
                     </Badge>
                   </div>
+                  <div className="flex flex-col gap-0.5">
+                    <Label className="font-normal">Content Processing</Label>
+                    <span className="text-sm font-normal text-foreground font-sans">Intelligent Context</span>
+                  </div>
                 </div>
 
                 {library.description && (
@@ -476,20 +508,27 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
                     <p className="text-sm text-foreground font-sans leading-relaxed m-0">{library.description}</p>
                   </div>
                 )}
+
               </>
             )}
           </>
         )}
       </Card>
 
-      <div ref={scrollRef} onScroll={handleScroll} className="flex-1 p-6 overflow-y-auto min-h-0 bg-muted">
-        {/* Status card */}
-        <StatusCard steps={enrichedSteps} />
-
+      <div
+        ref={scrollRef}
+        onScroll={handleScroll}
+        className={`flex-1 overflow-y-auto min-h-0 bg-muted ${editing ? 'px-6 pb-6 pt-4' : 'p-6'}`}
+      >
         {/* Agent Tool card */}
-        {agentToolReady && (
-          <AgentToolCard libraryName={library.libraryName} />
-        )}
+        <AgentToolCard
+          libraryName={library.libraryName}
+          defaultOpen={false}
+          autoExpandSignal={agentToolAutoExpandSignal}
+        />
+
+        {/* Status card */}
+        <StatusCard key={statusCardKey} steps={enrichedSteps} defaultOpen={autoExpandStatusOnEnter} />
 
         {/* Files card */}
         <Collapsible open={filesOpen} onOpenChange={setFilesOpen}>
@@ -617,16 +656,6 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
                 </div>
               </div>
 
-              <div className="flex items-center gap-2.5 py-4 px-6 border-t border-border opacity-60">
-                <Switch
-                  id="useAIView"
-                  checked={useAI}
-                  disabled
-                />
-                <Label htmlFor="useAIView" className="text-sm text-foreground font-normal cursor-default">
-                  Use AI to process content, extract text, tables, images and structures from files.
-                </Label>
-              </div>
             </CollapsibleContent>
           </Card>
         </Collapsible>

@@ -32,8 +32,8 @@ function StepConnector({ status }) {
   return <div className={`w-0.5 flex-1 min-h-5 my-1 ${connectorStyles[status] || connectorStyles.default}`} />
 }
 
-export default function StatusCard({ steps }) {
-  const [open, setOpen] = useState(true)
+export default function StatusCard({ steps, defaultOpen = false }) {
+  const [open, setOpen] = useState(defaultOpen)
 
   return (
     <Collapsible open={open} onOpenChange={setOpen}>

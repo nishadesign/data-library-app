@@ -12,6 +12,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('dataLibraries')
   const [savedLibrary, setSavedLibrary] = useState(null)
   const [refreshKey, setRefreshKey] = useState(0)
+  const [autoExpandStatusOnEnter, setAutoExpandStatusOnEnter] = useState(false)
 
   function handleNewLibrary() {
     setActiveTab('newLibrary')
@@ -20,15 +21,18 @@ export default function App() {
   function handleBackToLibraries() {
     setActiveTab('dataLibraries')
     setRefreshKey(k => k + 1)
+    setAutoExpandStatusOnEnter(false)
   }
 
   const handleSaveLibrary = useCallback((libraryData) => {
     setSavedLibrary(libraryData)
+    setAutoExpandStatusOnEnter(true)
     setActiveTab('libraryView')
   }, [])
 
   function handleViewLibrary(library) {
     setSavedLibrary(library)
+    setAutoExpandStatusOnEnter(false)
     setActiveTab('libraryView')
   }
 
@@ -67,6 +71,7 @@ export default function App() {
                 onEdit={handleEditLibrary}
                 onLibraryUpdate={handleLibraryUpdate}
                 onCancel={handleBackToLibraries}
+                autoExpandStatusOnEnter={autoExpandStatusOnEnter}
               />
             </TabsContent>
           )}

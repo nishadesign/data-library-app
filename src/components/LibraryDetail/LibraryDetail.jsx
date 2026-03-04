@@ -9,7 +9,47 @@ import { Card } from '../ui/card'
 import { Label } from '../ui/label'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../ui/table'
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '../ui/collapsible'
+import StatusCard from '../StatusCard/StatusCard'
+import { RetrieverIcon, ArrowUpRight } from '../../assets/icons'
 import { api } from '../../lib/api'
+
+const DEFAULT_STEPS = [
+  { name: 'Uploading files', status: 'default' },
+  { name: 'Creating search index', status: 'default' },
+  { name: 'Setting up retriever', status: 'default' },
+  { name: 'Building agent tool', status: 'default' },
+  { name: 'Indexing data', status: 'default' },
+]
+
+function AgentToolCard({ libraryName }) {
+  const [open, setOpen] = useState(false)
+
+  return (
+    <Collapsible open={open} onOpenChange={setOpen}>
+      <Card className="mb-4 overflow-hidden p-0">
+        <CollapsibleTrigger className="flex items-center gap-2 py-4 px-6 cursor-pointer bg-transparent border-none w-full text-left font-sans hover:opacity-85">
+          <span className={`flex items-center transition-transform duration-200 ${open ? 'rotate-0' : '-rotate-90'}`}>
+            <ChevronDown size={12} />
+          </span>
+          <span className="text-[15px] font-bold text-foreground">Agent Tool</span>
+        </CollapsibleTrigger>
+
+        <CollapsibleContent>
+          <div className="px-6 pb-5">
+            <p className="text-sm text-foreground leading-[1.55] m-0 mb-3 font-sans">
+              To use this data, add the retriever action to the topic
+            </p>
+            <a href="#" className="inline-flex items-center gap-2 text-sm text-primary font-sans font-normal no-underline hover:underline">
+              <RetrieverIcon size={18} />
+              Get information from {libraryName}
+              <ArrowUpRight size={11} />
+            </a>
+          </div>
+        </CollapsibleContent>
+      </Card>
+    </Collapsible>
+  )
+}
 
 export default function LibraryDetail({ onCancel, onSave }) {
   const [dataSpace, setDataSpace] = useState('Default')
@@ -113,59 +153,73 @@ export default function LibraryDetail({ onCancel, onSave }) {
 
   return (
     <div className="flex-1 h-full bg-muted flex flex-col overflow-hidden">
-      <div className="flex-1 p-6 pb-0 overflow-y-auto min-h-0">
-        {/* Form Section */}
-        <Card className="p-5 px-6 pb-6 mb-4">
-          <div className="flex flex-col gap-1.5 w-full mb-4">
-            <Label htmlFor="dataSpace">Data Space</Label>
-            <div className="relative flex items-center">
-              <Input
-                id="dataSpace"
-                value={dataSpace}
-                readOnly
-                className="pr-9 cursor-pointer"
-              />
-              {dataSpace && (
-                  <button
-                  className="absolute right-2.5 bg-transparent border-none cursor-pointer p-0.5 flex items-center justify-center text-muted-foreground rounded-full hover:bg-secondary"
-                  onClick={() => setDataSpace('')}
-                  aria-label="Clear data space"
-                >
-                  <X size={14} />
-                </button>
-              )}
-            </div>
+      {/* Sticky metadata card */}
+      <Card className="px-6 shrink-0 rounded-none border-x-0 border-t-0 p-5 pb-0">
+        <div className="flex flex-col gap-1.5 w-full mb-4">
+          <Label htmlFor="dataSpace">Data Space</Label>
+          <div className="relative flex items-center">
+            <Input
+              id="dataSpace"
+              value={dataSpace}
+              readOnly
+              className="pr-9 cursor-pointer"
+            />
+            {dataSpace && (
+                <button
+                className="absolute right-2.5 bg-transparent border-none cursor-pointer p-0.5 flex items-center justify-center text-muted-foreground rounded-full hover:bg-secondary"
+                onClick={() => setDataSpace('')}
+                aria-label="Clear data space"
+              >
+                <X size={14} />
+              </button>
+            )}
           </div>
+        </div>
 
-          <div className="flex gap-6 mb-4">
-            <div className="flex flex-col gap-1.5 flex-1">
-              <Label htmlFor="libraryName">Library Name</Label>
-              <Input
-                id="libraryName"
-                value={libraryName}
-                onChange={handleLibraryNameChange}
-              />
-            </div>
-            <div className="flex flex-col gap-1.5 flex-1">
-              <Label htmlFor="apiName">API Name</Label>
-              <Input
-                id="apiName"
-                value={apiName}
-                onChange={e => setApiName(e.target.value)}
-              />
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-1.5 w-full">
-            <Label htmlFor="description">Description</Label>
-            <Textarea
-              id="description"
-              value={description}
-              onChange={e => setDescription(e.target.value)}
-              placeholder="This description will be used by agent to decide when to call this data library..."
+        <div className="flex gap-6 mb-4">
+          <div className="flex flex-col gap-1.5 flex-1">
+            <Label htmlFor="libraryName">Library Name</Label>
+            <Input
+              id="libraryName"
+              value={libraryName}
+              onChange={handleLibraryNameChange}
             />
           </div>
-        </Card>
+          <div className="flex flex-col gap-1.5 flex-1">
+            <Label htmlFor="apiName">API Name</Label>
+            <Input
+              id="apiName"
+              value={apiName}
+              onChange={e => setApiName(e.target.value)}
+            />
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-1.5 w-full mb-4">
+          <Label htmlFor="description">Description</Label>
+          <Textarea
+            id="description"
+            value={description}
+            onChange={e => setDescription(e.target.value)}
+            placeholder="This description will be used by agent to decide when to call this data library..."
+          />
+        </div>
+
+        <div className="flex items-center gap-2.5 py-4 -mx-6 px-6 border-t border-border">
+          <Switch
+            id="useAI"
+            checked={useAI}
+            onCheckedChange={setUseAI}
+          />
+          <Label htmlFor="useAI" className="text-sm text-foreground font-normal cursor-pointer">
+            Use AI to process content, extract text, tables, images and structures from files.
+          </Label>
+        </div>
+      </Card>
+
+      <div className="flex-1 p-6 pb-0 overflow-y-auto min-h-0">
+        <AgentToolCard libraryName={libraryName} />
+        <StatusCard steps={DEFAULT_STEPS} defaultOpen={false} />
 
         {/* Files Section */}
         <Collapsible open={filesOpen} onOpenChange={setFilesOpen}>
@@ -271,16 +325,6 @@ export default function LibraryDetail({ onCancel, onSave }) {
                 />
               </div>
 
-              <div className="flex items-center gap-2.5 py-4 px-6 border-t border-border">
-                <Switch
-                  id="useAI"
-                  checked={useAI}
-                  onCheckedChange={setUseAI}
-                />
-                <Label htmlFor="useAI" className="text-sm text-foreground font-normal cursor-pointer">
-                  Use AI to process content, extract text, tables, images and structures from files.
-                </Label>
-              </div>
             </CollapsibleContent>
           </Card>
         </Collapsible>
