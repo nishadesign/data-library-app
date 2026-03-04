@@ -10,7 +10,7 @@ export default function GlobalHeader() {
         <img src={salesforceIcon} alt="Salesforce" className="h-7 w-auto" />
       </div>
       <div className="flex-1 flex justify-center px-6">
-        <div className="flex items-center gap-2 bg-background border border-input rounded px-4 py-[5px] w-80 max-w-full cursor-text hover:border-ring">
+        <div className="flex items-center gap-2 bg-background border border-input rounded-full px-4 py-[5px] w-80 max-w-full cursor-text hover:border-ring">
           <Search size={14} className="text-muted-foreground" />
           <span className="text-muted-foreground text-sm font-sans">Search...</span>
         </div>

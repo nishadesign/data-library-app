@@ -158,8 +158,18 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
 
   const handleScroll = useCallback(() => {
     if (!scrollRef.current) return
-    if (!editing) setMetaCollapsed(scrollRef.current.scrollTop > 20)
-  }, [editing])
+    if (!editing) {
+      if (pipelineOverall === 'inProgress') {
+        if (metaCollapsed) setMetaCollapsed(false)
+        return
+      }
+      const scrollTop = scrollRef.current.scrollTop
+      const nextCollapsed = metaCollapsed ? scrollTop > 0 : scrollTop > 20
+      if (nextCollapsed !== metaCollapsed) {
+        setMetaCollapsed(nextCollapsed)
+      }
+    }
+  }, [editing, metaCollapsed, pipelineOverall])
 
   function startEditing() {
     setEditDraft({
@@ -468,7 +478,7 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
                 disabled
               />
               <Label htmlFor="useAIEdit" className="text-sm text-foreground font-normal cursor-default">
-                Use AI to process content, extract text, tables, images and structures from files.
+                Use Intelligent Context to process content, extract text, tables, images and structures from files.
               </Label>
             </div>
           </>
@@ -552,7 +562,7 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
                 <span className="text-[15px] font-bold text-foreground">Files</span>
               </CollapsibleTrigger>
               <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2 border border-input rounded px-3 py-[5px] bg-background w-40 focus-within:border-ring focus-within:ring-1 focus-within:ring-ring">
+                <div className="flex items-center gap-2 border border-input rounded-full px-3 py-[5px] bg-background w-40 focus-within:border-ring focus-within:ring-1 focus-within:ring-ring">
                   <Search size={14} className="text-muted-foreground" />
                   <input
                     type="text"
@@ -580,10 +590,6 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
 
             <CollapsibleContent>
               <div className="px-6 pb-5">
-                <p className="text-xs text-muted-foreground font-sans m-0 mb-3">
-                  Add files up to 1000 files &middot; Supports PDF, HTML, .TXT
-                </p>
-
                 <div className="border border-border rounded-lg overflow-hidden">
                 <Table>
                   <TableHeader>
@@ -674,7 +680,7 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
 
       {/* Footer */}
       <div className="flex justify-center gap-3 py-4 px-6 bg-background border-t border-border shrink-0">
-        <Button variant="neutral" onClick={() => { if (editing) cancelEditing(); else onCancel?.(); }}>
+        <Button variant="ghost" className="h-auto px-0 text-foreground hover:bg-transparent" onClick={() => { if (editing) cancelEditing(); else onCancel?.(); }}>
           Cancel
         </Button>
         {selectedFiles.size > 0 && (

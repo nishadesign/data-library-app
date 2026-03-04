@@ -5,14 +5,40 @@
 @custom-variant dark (&:is(.dark *));
 
 @keyframes pulse-ring {
-  0% { box-shadow: 0 0 0 0 rgba(26, 188, 176, 0.4); }
-  70% { box-shadow: 0 0 0 6px rgba(26, 188, 176, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(26, 188, 176, 0); }
+  0% { box-shadow: 0 0 0 0 rgba(6, 165, 154, 0.35); }
+  70% { box-shadow: 0 0 0 6px rgba(6, 165, 154, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(6, 165, 154, 0); }
 }
 
 @keyframes shimmer-sweep {
   0% { background-position: 200% 0; }
   100% { background-position: -200% 0; }
+}
+
+@keyframes collapsible-down {
+  from {
+    height: 0;
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    height: var(--radix-collapsible-content-height);
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes collapsible-up {
+  from {
+    height: var(--radix-collapsible-content-height);
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    height: 0;
+    opacity: 0;
+    transform: translateY(-4px);
+  }
 }
 
 @keyframes enter {
@@ -121,7 +147,13 @@
   --destructive: #c23934;
   --destructive-foreground: #ffffff;
 
-  --success: #0B827C;
+  --success: #06A59A;
+  --status-ready-bg: #DEF9F3;
+  --status-ready-text: #056764;
+  --status-processing-bg: #EDF4FF;
+  --status-processing-text: #0B5CAB;
+  --status-failed-bg: #FEF0F3;
+  --status-failed-text: #B60554;
 
   --border: #C9C9C9;
   --input: #d8d8d8;

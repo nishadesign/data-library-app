@@ -103,7 +103,7 @@ export default function MainContent({ onNewLibrary, onViewLibrary, refreshKey })
           <h1 className="text-lg font-bold text-foreground m-0 font-sans">Data Libraries</h1>
         </div>
         <div className="flex items-center gap-2">
-          <div className="flex items-center gap-2 border border-input rounded px-3 py-[5px] bg-background w-[180px] focus-within:border-ring focus-within:ring-1 focus-within:ring-ring">
+          <div className="flex items-center gap-2 border border-input rounded-full px-3 py-[5px] bg-background w-[180px] focus-within:border-ring focus-within:ring-1 focus-within:ring-ring">
             <Search size={14} className="text-muted-foreground" />
             <input
               type="text"
@@ -186,8 +186,8 @@ export default function MainContent({ onNewLibrary, onViewLibrary, refreshKey })
                   <TableHead><span className="flex items-center gap-1">Name <ArrowUpDown size={10} className="text-muted-foreground" /></span></TableHead>
                   <TableHead><span className="flex items-center gap-1">Type <ArrowUpDown size={10} className="text-muted-foreground" /></span></TableHead>
                   <TableHead><span className="flex items-center gap-1">Status <ArrowUpDown size={10} className="text-muted-foreground" /></span></TableHead>
-                  <TableHead><span className="flex items-center gap-1">Uploaded By <ArrowUpDown size={10} className="text-muted-foreground" /></span></TableHead>
-                  <TableHead><span className="flex items-center gap-1">Uploaded On <ArrowUpDown size={10} className="text-muted-foreground" /></span></TableHead>
+                  <TableHead><span className="flex items-center gap-1">Created By <ArrowUpDown size={10} className="text-muted-foreground" /></span></TableHead>
+                  <TableHead><span className="flex items-center gap-1">Created On <ArrowUpDown size={10} className="text-muted-foreground" /></span></TableHead>
                   <TableHead><span className="flex items-center gap-1">Agents <ArrowUpDown size={10} className="text-muted-foreground" /></span></TableHead>
                   <TableHead className="w-9" />
                 </TableRow>
@@ -272,7 +272,7 @@ export default function MainContent({ onNewLibrary, onViewLibrary, refreshKey })
 
       {selectedIds.length > 0 && (
         <div className="flex justify-center gap-3 py-4 px-6 bg-background border-t border-border shrink-0 shadow-[0_-2px_8px_rgba(0,0,0,0.06)]">
-          <Button variant="neutral" onClick={() => setSelected({})}>
+          <Button variant="ghost" className="h-auto px-0 text-foreground hover:bg-transparent" onClick={() => setSelected({})}>
             Cancel
           </Button>
           <Button variant="destructive" onClick={handleRemoveSelected}>
