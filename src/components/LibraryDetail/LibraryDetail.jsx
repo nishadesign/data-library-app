@@ -216,7 +216,7 @@ export default function LibraryDetail({ onCancel, onSave }) {
             onCheckedChange={setUseAI}
           />
           <Label htmlFor="useAI" className="text-sm text-foreground font-normal cursor-pointer">
-            Use Intelligent Context to process content, extract text, tables, images and structures from files.
+            Use Intelligent Context to process content, extract text, tables, images and structures from files, then flag quality issues and suggest cleanup fixes.
           </Label>
         </div>
       </Card>
@@ -255,8 +255,8 @@ export default function LibraryDetail({ onCancel, onSave }) {
                   <div
                     className={`border-2 border-dashed rounded-md min-h-[140px] flex flex-col items-center justify-center cursor-pointer transition-colors mb-3 ${
                       dragOver
-                        ? 'border-muted-foreground bg-[#e8e8e8]'
-                        : 'border-[#c9c9c9] bg-[#f3f3f3]'
+                        ? 'border-ring bg-secondary'
+                        : 'border-input bg-muted'
                     }`}
                     onDragOver={e => { e.preventDefault(); setDragOver(true) }}
                     onDragLeave={e => { e.preventDefault(); setDragOver(false) }}
@@ -267,6 +267,9 @@ export default function LibraryDetail({ onCancel, onSave }) {
                       <span className="text-sm font-bold text-primary cursor-pointer font-sans hover:underline">Browse</span>
                       <span className="text-sm text-muted-foreground font-sans">&nbsp;Or drop files</span>
                     </div>
+                    <p className="m-0 mt-2 text-sm text-muted-foreground font-sans">
+                      AI will scan uploaded data for quality issues and recommend fixes after save.
+                    </p>
                   </div>
                 ) : (
                   <div className="border border-border rounded-lg overflow-hidden">
@@ -300,7 +303,9 @@ export default function LibraryDetail({ onCancel, onSave }) {
                           </TableCell>
                           <TableCell>{file.name}</TableCell>
                           <TableCell>{file.size}</TableCell>
-                          <TableCell className="text-muted-foreground">{file.status || ''}</TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {file.status || 'Will be analyzed after upload'}
+                          </TableCell>
                           <TableCell />
                           <TableCell />
                           <TableCell className="text-center">

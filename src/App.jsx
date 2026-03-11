@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback, useEffect } from 'react'
 import GlobalHeader from './components/GlobalHeader/GlobalHeader'
 import AppHeader from './components/AppHeader/AppHeader'
 import Sidebar from './components/Sidebar/Sidebar'
@@ -9,11 +9,19 @@ import { Tabs, TabsContent } from './components/ui/tabs'
 import { TooltipProvider } from './components/ui/tooltip'
 
 export default function App() {
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    if (typeof window === 'undefined') return false
+    const savedTheme = window.localStorage.getItem('data-library-theme')
+    if (savedTheme === 'dark') return true
+    if (savedTheme === 'light') return false
+    return window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false
+  })
   const [activeTab, setActiveTab] = useState('dataLibraries')
   const [savedLibrary, setSavedLibrary] = useState(null)
+  const [libraryOverrides, setLibraryOverrides] = useState({})
   const [refreshKey, setRefreshKey] = useState(0)
   const [autoExpandStatusOnEnter, setAutoExpandStatusOnEnter] = useState(false)
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true)
 
   function handleNewLibrary() {
     setActiveTab('newLibrary')
@@ -27,13 +35,19 @@ export default function App() {
 
   const handleSaveLibrary = useCallback((libraryData) => {
     setSavedLibrary(libraryData)
+    if (libraryData?.id) {
+      setLibraryOverrides(prev => ({ ...prev, [libraryData.id]: libraryData }))
+    }
     setAutoExpandStatusOnEnter(true)
     setActiveTab('libraryView')
   }, [])
 
   function handleViewLibrary(library) {
-    setSavedLibrary(library)
-    setAutoExpandStatusOnEnter(Boolean(library?.isDemo && library?.demoState === 'ready'))
+    const nextLibrary = library?.id && libraryOverrides[library.id]
+      ? { ...library, ...libraryOverrides[library.id] }
+      : library
+    setSavedLibrary(nextLibrary)
+    setAutoExpandStatusOnEnter(Boolean(nextLibrary?.isDemo && nextLibrary?.demoState === 'ready'))
     setActiveTab('libraryView')
   }
 
@@ -42,13 +56,27 @@ export default function App() {
   }
 
   const handleLibraryUpdate = useCallback((updated) => {
-    setSavedLibrary(prev => ({ ...prev, ...updated }))
+    setSavedLibrary(prev => {
+      const next = { ...prev, ...updated }
+      if (next?.id) {
+        setLibraryOverrides(overrides => ({ ...overrides, [next.id]: next }))
+      }
+      return next
+    })
   }, [])
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', isDarkMode)
+    window.localStorage.setItem('data-library-theme', isDarkMode ? 'dark' : 'light')
+  }, [isDarkMode])
 
   return (
     <TooltipProvider delayDuration={300}>
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col h-screen w-screen overflow-hidden font-sans">
-        <GlobalHeader />
+        <GlobalHeader
+          isDarkMode={isDarkMode}
+          onToggleDarkMode={setIsDarkMode}
+        />
         <AppHeader
           activeTab={activeTab}
           onTabChange={setActiveTab}
@@ -57,7 +85,12 @@ export default function App() {
         <div className="flex flex-1 overflow-hidden">
           <Sidebar collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed(prev => !prev)} />
           <TabsContent value="dataLibraries" className="flex-1 h-full">
-            <MainContent onNewLibrary={handleNewLibrary} onViewLibrary={handleViewLibrary} refreshKey={refreshKey} />
+            <MainContent
+              onNewLibrary={handleNewLibrary}
+              onViewLibrary={handleViewLibrary}
+              refreshKey={refreshKey}
+              libraryOverrides={libraryOverrides}
+            />
           </TabsContent>
           <TabsContent value="newLibrary" className="flex-1 h-full">
             <LibraryDetail
