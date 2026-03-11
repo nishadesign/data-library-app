@@ -43,20 +43,32 @@ function formatDate(dateStr) {
     ' ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
 }
 
-export default function MainContent({ onNewLibrary, onViewLibrary, refreshKey }) {
-  const [libraries, setLibraries] = useState([])
+export default function MainContent({ onNewLibrary, onViewLibrary, refreshKey, libraryOverrides = {} }) {
+  const [libraries, setLibraries] = useState(() => mergeLibraries(api.getFallbackLibraries(), libraryOverrides))
   const [loading, setLoading] = useState(true)
   const [selected, setSelected] = useState({})
   const [searchQuery, setSearchQuery] = useState('')
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleting, setDeleting] = useState(false)
 
+  function mergeLibraries(nextLibraries, overrides) {
+    return nextLibraries.map((library) => (
+      library?.id && overrides[library.id]
+        ? { ...library, ...overrides[library.id] }
+        : library
+    ))
+  }
+
   useEffect(() => {
     api.listLibraries()
-      .then(setLibraries)
-      .catch(() => setLibraries([]))
+      .then((nextLibraries) => setLibraries(mergeLibraries(nextLibraries, libraryOverrides)))
+      .catch(() => setLibraries(mergeLibraries(api.getFallbackLibraries(), libraryOverrides)))
       .finally(() => setLoading(false))
-  }, [refreshKey])
+  }, [refreshKey, libraryOverrides])
+
+  useEffect(() => {
+    setLibraries((previous) => mergeLibraries(previous, libraryOverrides))
+  }, [libraryOverrides])
 
   const hasLibraries = libraries.length > 0
   const hasUserLibraries = libraries.some(lib => !lib.isDemo)
@@ -97,7 +109,9 @@ export default function MainContent({ onNewLibrary, onViewLibrary, refreshKey })
     }
     setShowDeleteConfirm(false)
     setSelected({})
-    api.listLibraries().then(setLibraries).catch(() => setLibraries([]))
+    api.listLibraries()
+      .then((nextLibraries) => setLibraries(mergeLibraries(nextLibraries, libraryOverrides)))
+      .catch(() => setLibraries(mergeLibraries(api.getFallbackLibraries(), libraryOverrides)))
     setDeleting(false)
   }
 
@@ -174,7 +188,7 @@ export default function MainContent({ onNewLibrary, onViewLibrary, refreshKey })
           Quick start by adding data, we'll handle the rest!
         </h2>
         <p className="text-sm text-muted-foreground leading-relaxed m-0 mb-6 font-sans">
-          After you add your data, we'll read it, prepare it for search, and make sure your agent can use it reliably. You can track progress at each step and review the results before going live.
+          After you add your data, we'll read it, prepare it for search, spot common quality issues, and suggest fixes before your agent relies on it. You can track progress at each step and review the results before going live.
           <br />
           <a href="#" className="inline-flex items-center gap-1 text-primary no-underline text-sm font-normal hover:underline">
             Learn more in help
@@ -186,20 +200,20 @@ export default function MainContent({ onNewLibrary, onViewLibrary, refreshKey })
         {!hasUserLibraries && (
           <div className="mb-8 grid grid-cols-[repeat(4,minmax(0,1fr))] gap-3 max-[900px]:grid-cols-2">
             <DataSourceCard
-              icon={<img src={filesIcon} alt="Files" width={28} height={28} />}
+              icon={<img src={filesIcon} alt="Files" width={28} height={28} className="dark:invert dark:brightness-200" />}
               label="Upload Files"
               onClick={onNewLibrary}
             />
             <DataSourceCard
-              icon={<img src={articleIcon} alt="Articles" width={28} height={28} />}
+              icon={<img src={articleIcon} alt="Articles" width={28} height={28} className="dark:invert dark:brightness-200" />}
               label="Add Knowledge Articles"
             />
             <DataSourceCard
-              icon={<img src={websiteIcon} alt="Websites" width={28} height={28} />}
+              icon={<img src={websiteIcon} alt="Websites" width={28} height={28} className="dark:invert dark:brightness-200" />}
               label="Search Websites"
             />
             <DataSourceCard
-              icon={<img src={retrieverCardIcon} alt="Retrievers" width={28} height={28} />}
+              icon={<img src={retrieverCardIcon} alt="Retrievers" width={28} height={28} className="dark:invert dark:brightness-200" />}
               label="Custom Retrievers"
             />
             <DataSourceCard

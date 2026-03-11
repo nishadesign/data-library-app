@@ -7,8 +7,8 @@ export default function Sidebar({ collapsed = false, onToggle }) {
     : 'flex items-center gap-2.5 py-[9px] pr-3 pl-4 text-sm font-normal text-sidebar-foreground font-sans bg-transparent border-none cursor-pointer text-left w-full box-border border-l-4 border-l-transparent hover:bg-surface-hover'
 
   const activeButtonBase = collapsed
-    ? 'flex items-center justify-center py-[9px] px-2 text-sm font-semibold text-sidebar-accent-foreground font-sans bg-sidebar-accent border-none cursor-pointer text-left w-full box-border border-l-4 border-l-primary hover:bg-[#daeaf8]'
-    : 'flex items-center gap-2.5 py-[9px] pr-3 pl-4 text-sm font-semibold text-sidebar-accent-foreground font-sans bg-sidebar-accent border-none cursor-pointer text-left w-full box-border border-l-4 border-l-primary hover:bg-[#daeaf8]'
+    ? 'flex items-center justify-center py-[9px] px-2 text-sm font-semibold text-sidebar-accent-foreground font-sans bg-sidebar-accent border-none cursor-pointer text-left w-full box-border border-l-4 border-l-primary hover:bg-primary-light'
+    : 'flex items-center gap-2.5 py-[9px] pr-3 pl-4 text-sm font-semibold text-sidebar-accent-foreground font-sans bg-sidebar-accent border-none cursor-pointer text-left w-full box-border border-l-4 border-l-primary hover:bg-primary-light'
 
   return (
     <aside className={`${collapsed ? 'w-[64px] min-w-[64px]' : 'w-[180px] min-w-[180px]'} bg-sidebar border-r border-sidebar-border flex flex-col justify-between overflow-y-auto box-border transition-[width,min-width] duration-200 ease-out`}>

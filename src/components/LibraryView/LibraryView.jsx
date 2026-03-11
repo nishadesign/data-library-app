@@ -14,6 +14,11 @@ import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '../ui/colla
 import StatusCard from '../StatusCard/StatusCard'
 import { RetrieverIcon, ArrowUpRight } from '../../assets/icons'
 import { api } from '../../lib/api'
+import {
+  createRecommendationsForFiles,
+  getFileRecommendationStats,
+  mergeRecommendationState,
+} from '../../lib/recommendations'
 
 function formatSize(bytes) {
   if (typeof bytes === 'string') return bytes
@@ -129,6 +134,8 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
   const [editing, setEditing] = useState(false)
   const [editDraft, setEditDraft] = useState({})
   const [agentToolAutoExpandSignal, setAgentToolAutoExpandSignal] = useState(0)
+  const [recommendations, setRecommendations] = useState([])
+  const [selectedFixFileId, setSelectedFixFileId] = useState(null)
   const fileInputRef = useRef(null)
   const scrollRef = useRef(null)
   const pipelineCancelRef = useRef(null)
@@ -136,6 +143,23 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
   const isDemoReady = Boolean(library?.isDemo && library?.demoState === 'ready')
   const isDemoFailed = Boolean(library?.isDemo && library?.demoState === 'failed')
   const isReadOnlyDemo = Boolean(library?.isDemo)
+  const files = library.files || []
+
+  const persistLibraryPatch = useCallback(async (patch) => {
+    if (!library?.id) return
+
+    if (library?.isDemo) {
+      onLibraryUpdate?.(patch)
+      return
+    }
+
+    try {
+      const updatedLibrary = await api.updateLibrary(library.id, patch)
+      onLibraryUpdate?.(updatedLibrary || patch)
+    } catch {
+      onLibraryUpdate?.(patch)
+    }
+  }, [library?.id, library?.isDemo, onLibraryUpdate])
 
   const runClientPipeline = useCallback(async (fileCount, skipReady, uploadAlreadyDone) => {
     if (pipelineCancelRef.current) pipelineCancelRef.current.cancelled = true
@@ -196,9 +220,9 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
 
     if (!cancel.cancelled) {
       setPipelineOverall('ready')
-      onLibraryUpdate?.({ status: 'Ready' })
+      await persistLibraryPatch({ status: 'Ready' })
     }
-  }, [onLibraryUpdate])
+  }, [persistLibraryPatch])
 
   const handleScroll = useCallback(() => {
     if (!scrollRef.current) return
@@ -255,6 +279,14 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
   }, [library?.id])
 
   useEffect(() => {
+    const nextRecommendations = createRecommendationsForFiles(files)
+    setRecommendations((previous) => mergeRecommendationState(nextRecommendations, previous))
+    setSelectedFixFileId((previous) => (
+      previous && files.some((file) => file.id === previous) ? previous : null
+    ))
+  }, [files, library?.id])
+
+  useEffect(() => {
     if (isDemoReady) {
       setPipelineSteps(DEMO_READY_STEPS)
       setPipelineOverall('ready')
@@ -293,7 +325,7 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
         }
 
         if (data.overall === 'ready') {
-          onLibraryUpdate?.({ status: 'Ready' })
+          void persistLibraryPatch({ status: 'Ready' })
         }
       },
       () => {
@@ -306,10 +338,32 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
     )
 
     return unsubscribe
-  }, [library?.id, library?.isDemo, library?.status, onLibraryUpdate, runClientPipeline])
+  }, [library?.id, library?.isDemo, library?.status, persistLibraryPatch, runClientPipeline])
 
-  const files = library.files || []
   const statusCardKey = `${library?.id || 'library'}-${(autoExpandStatusOnEnter || isDemoReady) ? 'open' : 'closed'}`
+  const selectedFixFile = files.find((file) => file.id === selectedFixFileId) || null
+  const selectedFileRecommendations = useMemo(
+    () => recommendations.filter(
+      (recommendation) => recommendation.fileId === selectedFixFileId && recommendation.status === 'new'
+    ),
+    [recommendations, selectedFixFileId]
+  )
+
+  function openFixesModal(fileId) {
+    setSelectedFixFileId(fileId)
+  }
+
+  function closeFixesModal() {
+    setSelectedFixFileId(null)
+  }
+
+  function handleRecommendationAction(id, status) {
+    setRecommendations((previous) => previous.map((recommendation) => (
+      recommendation.id === id
+        ? { ...recommendation, status }
+        : recommendation
+    )))
+  }
 
   function handleAddFiles(fileList) {
     if (isReadOnlyDemo) return
@@ -543,7 +597,7 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
               />
             </div>
 
-            <div className="flex items-center gap-2.5 py-4 mt-4 -mx-6 px-6 border-t border-border opacity-60">
+            <div className="mt-3 flex items-center gap-2.5 pt-3 -mx-6 px-6 border-t border-border opacity-60">
               <Switch
                 id="useAIEdit"
                 checked={useAI}
@@ -686,6 +740,9 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
                         <span className="flex items-center gap-1">Status <ArrowUpDown size={10} className="text-muted-foreground" /></span>
                       </TableHead>
                       <TableHead>
+                        <span className="flex items-center gap-1">AI Fixes <ArrowUpDown size={10} className="text-muted-foreground" /></span>
+                      </TableHead>
+                      <TableHead>
                         <span className="flex items-center gap-1">Uploaded By <ArrowUpDown size={10} className="text-muted-foreground" /></span>
                       </TableHead>
                       <TableHead>
@@ -695,7 +752,10 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {files.map((file, fileIndex) => (
+                    {files.map((file, fileIndex) => {
+                      const fileRecommendationStats = getFileRecommendationStats(file.id, recommendations)
+
+                      return (
                       <TableRow key={file.id}>
                         <TableCell className="text-center">
                           <Checkbox
@@ -710,6 +770,19 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
                         <TableCell className="text-muted-foreground text-sm">
                           {getFileDisplayStatus(file, fileIndex)}
                         </TableCell>
+                        <TableCell className="text-sm">
+                          {fileRecommendationStats.count > 0 ? (
+                            <button
+                              type="button"
+                              className="inline-flex cursor-pointer items-center rounded-full border border-input bg-background px-3 py-1 text-sm font-semibold text-primary transition-colors hover:bg-secondary"
+                              onClick={() => openFixesModal(file.id)}
+                            >
+                              {fileRecommendationStats.count} fixes available
+                            </button>
+                          ) : (
+                            <Badge variant="success">Clean</Badge>
+                          )}
+                        </TableCell>
                         <TableCell className="text-sm">{file.uploadedBy || ''}</TableCell>
                         <TableCell className="text-sm">
                           {file.uploadedOn ? new Date(file.uploadedOn).toLocaleDateString() : ''}
@@ -720,7 +793,8 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
                           </button>
                         </TableCell>
                       </TableRow>
-                    ))}
+                      )
+                    })}
                     {newFiles.map((file) => (
                       <TableRow key={file.id}>
                         <TableCell className="text-center">
@@ -735,6 +809,9 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
                         <TableCell>{formatSize(file.size)}</TableCell>
                         <TableCell className="text-muted-foreground text-sm">
                           {file.status || ''}
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          Will be analyzed after save
                         </TableCell>
                         <TableCell className="text-sm" />
                         <TableCell className="text-sm" />
@@ -783,6 +860,79 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
           </Button>
         )}
       </div>
+
+      {selectedFixFile && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4" onClick={closeFixesModal}>
+          <div
+            className="w-full max-w-6xl rounded-xl border border-border bg-background shadow-xl"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="file-fixes-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-4 border-b border-border px-6 py-5">
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 id="file-fixes-title" className="m-0 text-lg font-semibold text-foreground font-sans">
+                    Suggested Fixes
+                  </h3>
+                  <Badge variant="warning">AI recommendation</Badge>
+                </div>
+                <p className="m-0 mt-1 text-sm text-muted-foreground">
+                  Review the detected issues in the file
+                </p>
+              </div>
+              <Button variant="ghost" onClick={closeFixesModal}>Close</Button>
+            </div>
+
+            <div className="max-h-[70vh] overflow-auto px-6 py-5">
+              <div className="border border-border rounded-lg overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Issue</TableHead>
+                      <TableHead>AI Recommendation</TableHead>
+                      <TableHead className="w-[180px]">Action</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {selectedFileRecommendations.length > 0 ? selectedFileRecommendations.map((recommendation) => (
+                      <TableRow key={recommendation.id}>
+                        <TableCell>
+                          <div className="rounded-md bg-[var(--status-failed-bg)] px-3 py-2 font-mono text-sm text-[var(--status-failed-text)]">
+                            - {recommendation.title}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="rounded-md bg-[var(--status-ready-bg)] px-3 py-2 font-mono text-sm text-[var(--status-ready-text)]">
+                            + {recommendation.suggestedFix}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Button variant="link" size="sm" onClick={() => handleRecommendationAction(recommendation.id, 'applied')}>
+                              ✓ apply fix
+                            </Button>
+                            <Button variant="link" size="sm" onClick={() => handleRecommendationAction(recommendation.id, 'dismissed')}>
+                              x dismiss
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )) : (
+                      <TableRow>
+                        <TableCell colSpan={3} className="py-8 text-center text-sm text-muted-foreground">
+                          No open fixes remaining for this file.
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
