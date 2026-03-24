@@ -790,9 +790,6 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
                         <span className="flex items-center gap-1">Status <ArrowUpDown size={10} className="text-muted-foreground" /></span>
                       </TableHead>
                       <TableHead>
-                        <span className="flex items-center gap-1">AI Fixes <ArrowUpDown size={10} className="text-muted-foreground" /></span>
-                      </TableHead>
-                      <TableHead>
                         <span className="flex items-center gap-1">Uploaded By <ArrowUpDown size={10} className="text-muted-foreground" /></span>
                       </TableHead>
                       <TableHead>
@@ -821,17 +818,6 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
                         <TableCell>{formatSize(file.size)}</TableCell>
                         <TableCell className="text-muted-foreground text-sm">
                           {fileDisplayStatus}
-                        </TableCell>
-                        <TableCell className="text-sm">
-                          {fileRecommendationStats.count > 0 && (
-                            <button
-                              type="button"
-                              className="cursor-pointer bg-transparent border-none p-0 text-sm font-semibold text-primary hover:underline"
-                              onClick={() => openFixesModal(file.id)}
-                            >
-                              {fileRecommendationStats.count} fixes available
-                            </button>
-                          )}
                         </TableCell>
                         <TableCell className="text-sm">{file.uploadedBy || ''}</TableCell>
                         <TableCell className="text-sm">
@@ -878,9 +864,6 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
                         <TableCell>{formatSize(file.size)}</TableCell>
                         <TableCell className="text-muted-foreground text-sm">
                           {file.status || ''}
-                        </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          Will be analyzed after save
                         </TableCell>
                         <TableCell className="text-sm" />
                         <TableCell className="text-sm" />

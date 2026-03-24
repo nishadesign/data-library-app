@@ -307,7 +307,6 @@ export default function LibraryDetail({ onCancel, onSave }) {
                         <TableHead><span className="flex items-center gap-1">File Name <ArrowUpDown size={10} className="text-muted-foreground" /></span></TableHead>
                         <TableHead><span className="flex items-center gap-1">Size <ArrowUpDown size={10} className="text-muted-foreground" /></span></TableHead>
                         <TableHead><span className="flex items-center gap-1">Status <ArrowUpDown size={10} className="text-muted-foreground" /></span></TableHead>
-                        <TableHead><span className="flex items-center gap-1">AI Fixes <ArrowUpDown size={10} className="text-muted-foreground" /></span></TableHead>
                         <TableHead><span className="flex items-center gap-1">Uploaded By <ArrowUpDown size={10} className="text-muted-foreground" /></span></TableHead>
                         <TableHead><span className="flex items-center gap-1">Uploaded On <ArrowUpDown size={10} className="text-muted-foreground" /></span></TableHead>
                         <TableHead className="w-9 text-center" />
@@ -327,9 +326,6 @@ export default function LibraryDetail({ onCancel, onSave }) {
                           <TableCell>{file.size}</TableCell>
                           <TableCell className="text-muted-foreground">
                             {file.status}
-                          </TableCell>
-                          <TableCell className="text-muted-foreground">
-                            Will be analyzed after upload
                           </TableCell>
                           <TableCell />
                           <TableCell />
