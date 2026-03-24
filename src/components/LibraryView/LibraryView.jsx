@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react'
-import { ChevronDown, Search, Plus, MoreHorizontal, ArrowUpDown, Trash2, X } from 'lucide-react'
+import { ChevronDown, Search, Plus, MoreHorizontal, ArrowUpDown, Trash2, X, ListFilter, Sparkles, RotateCcw } from 'lucide-react'
 import { Button } from '../ui/button'
 import { Badge } from '../ui/badge'
 import { Input } from '../ui/input'
@@ -11,6 +11,13 @@ import { Label } from '../ui/label'
 import { Tooltip, TooltipTrigger, TooltipContent } from '../ui/tooltip'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../ui/table'
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '../ui/collapsible'
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from '../ui/dropdown-menu'
 import StatusCard from '../StatusCard/StatusCard'
 import { RetrieverIcon, ArrowUpRight } from '../../assets/icons'
 import { api } from '../../lib/api'
@@ -72,7 +79,7 @@ function AgentToolCard({ libraryName, defaultOpen = false, autoExpandSignal = 0,
           {showContent ? (
             <div className="px-6 pb-5">
               <p className="text-sm text-foreground leading-[1.55] m-0 mb-3 font-sans">
-                To use this data, add the retriever action to the topic
+                To use this data, simply @agent-tool in the Topic
               </p>
               <a href="#" className="inline-flex items-center gap-2 text-sm text-primary font-sans font-normal no-underline hover:underline">
                 <RetrieverIcon size={18} />
@@ -136,6 +143,7 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
   const [agentToolAutoExpandSignal, setAgentToolAutoExpandSignal] = useState(0)
   const [recommendations, setRecommendations] = useState([])
   const [selectedFixFileId, setSelectedFixFileId] = useState(null)
+  const [statusFilter, setStatusFilter] = useState('')
   const fileInputRef = useRef(null)
   const scrollRef = useRef(null)
   const pipelineCancelRef = useRef(null)
@@ -603,8 +611,14 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
                 checked={useAI}
                 disabled
               />
-              <Label htmlFor="useAIEdit" className="text-sm text-foreground font-normal cursor-default">
+              <Label htmlFor="useAIEdit" className="text-sm text-foreground font-normal cursor-default inline-flex items-center gap-1.5">
                 Use Intelligent Context to process content, extract text, tables, images and structures from files.
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Sparkles size={14} className="text-primary shrink-0" />
+                  </TooltipTrigger>
+                  <TooltipContent className="bg-tooltip-ai">This feature uses LLM to process content</TooltipContent>
+                </Tooltip>
               </Label>
             </div>
           </>
@@ -645,7 +659,15 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
                   </div>
                   <div className="flex flex-col gap-0.5">
                     <Label className="font-normal">Content Processing</Label>
-                    <span className="text-sm font-normal text-foreground font-sans">Intelligent Context</span>
+                    <span className="text-sm font-normal text-foreground font-sans inline-flex items-center gap-1.5">
+                      Intelligent Context
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Sparkles size={14} className="text-primary shrink-0" />
+                        </TooltipTrigger>
+                        <TooltipContent className="bg-tooltip-ai">This feature uses LLM to process content</TooltipContent>
+                      </Tooltip>
+                    </span>
                   </div>
                 </div>
 
@@ -698,6 +720,34 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
                     className="border-none outline-none text-sm font-sans text-foreground flex-1 bg-transparent placeholder:text-muted-foreground"
                   />
                 </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="neutral" size="icon" className="relative h-9 w-9">
+                      <ListFilter size={14} />
+                      {statusFilter && (
+                        <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-primary" />
+                      )}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem
+                      className={!statusFilter ? 'font-semibold text-primary' : ''}
+                      onClick={() => setStatusFilter('')}
+                    >
+                      All
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    {['Uploaded', 'Indexed', 'Failed Uploading', 'Failed Indexing'].map((status) => (
+                      <DropdownMenuItem
+                        key={status}
+                        className={statusFilter === status ? 'font-semibold text-primary' : ''}
+                        onClick={() => setStatusFilter(statusFilter === status ? '' : status)}
+                      >
+                        {status}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
                 <Button variant="neutral" onClick={() => fileInputRef.current?.click()} disabled={isReadOnlyDemo}>
                   <Plus size={12} />
                   Add Files
@@ -740,9 +790,6 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
                         <span className="flex items-center gap-1">Status <ArrowUpDown size={10} className="text-muted-foreground" /></span>
                       </TableHead>
                       <TableHead>
-                        <span className="flex items-center gap-1">AI Fixes <ArrowUpDown size={10} className="text-muted-foreground" /></span>
-                      </TableHead>
-                      <TableHead>
                         <span className="flex items-center gap-1">Uploaded By <ArrowUpDown size={10} className="text-muted-foreground" /></span>
                       </TableHead>
                       <TableHead>
@@ -753,6 +800,8 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
                   </TableHeader>
                   <TableBody>
                     {files.map((file, fileIndex) => {
+                      const fileDisplayStatus = getFileDisplayStatus(file, fileIndex)
+                      if (statusFilter && fileDisplayStatus !== statusFilter) return null
                       const fileRecommendationStats = getFileRecommendationStats(file.id, recommendations)
 
                       return (
@@ -768,29 +817,35 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
                         <TableCell>{file.name}</TableCell>
                         <TableCell>{formatSize(file.size)}</TableCell>
                         <TableCell className="text-muted-foreground text-sm">
-                          {getFileDisplayStatus(file, fileIndex)}
-                        </TableCell>
-                        <TableCell className="text-sm">
-                          {fileRecommendationStats.count > 0 ? (
-                            <button
-                              type="button"
-                              className="inline-flex cursor-pointer items-center rounded-full border border-input bg-background px-3 py-1 text-sm font-semibold text-primary transition-colors hover:bg-secondary"
-                              onClick={() => openFixesModal(file.id)}
-                            >
-                              {fileRecommendationStats.count} fixes available
-                            </button>
-                          ) : (
-                            <Badge variant="success">Clean</Badge>
-                          )}
+                          {fileDisplayStatus}
                         </TableCell>
                         <TableCell className="text-sm">{file.uploadedBy || ''}</TableCell>
                         <TableCell className="text-sm">
                           {file.uploadedOn ? new Date(file.uploadedOn).toLocaleDateString() : ''}
                         </TableCell>
                         <TableCell className="text-center">
-                          <button className="bg-transparent border-none cursor-pointer p-0.5 flex items-center justify-center rounded-full text-muted-foreground hover:bg-secondary" aria-label="Actions">
-                            <MoreHorizontal size={16} />
-                          </button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <button className="bg-transparent border-none cursor-pointer p-0.5 flex items-center justify-center rounded-full text-muted-foreground hover:bg-secondary" aria-label="Actions">
+                                <MoreHorizontal size={16} />
+                              </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem>
+                                <RotateCcw size={14} />
+                                Retry Upload
+                              </DropdownMenuItem>
+                              <DropdownMenuItem>
+                                <RotateCcw size={14} />
+                                Retry Index
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem className="text-destructive focus:text-destructive">
+                                <Trash2 size={14} />
+                                Remove File
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </TableCell>
                       </TableRow>
                       )
@@ -810,15 +865,31 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
                         <TableCell className="text-muted-foreground text-sm">
                           {file.status || ''}
                         </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          Will be analyzed after save
-                        </TableCell>
                         <TableCell className="text-sm" />
                         <TableCell className="text-sm" />
                         <TableCell className="text-center">
-                          <button className="bg-transparent border-none cursor-pointer p-0.5 flex items-center justify-center rounded-full text-muted-foreground hover:bg-secondary" aria-label="Actions">
-                            <MoreHorizontal size={16} />
-                          </button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <button className="bg-transparent border-none cursor-pointer p-0.5 flex items-center justify-center rounded-full text-muted-foreground hover:bg-secondary" aria-label="Actions">
+                                <MoreHorizontal size={16} />
+                              </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem>
+                                <RotateCcw size={14} />
+                                Retry Upload
+                              </DropdownMenuItem>
+                              <DropdownMenuItem>
+                                <RotateCcw size={14} />
+                                Retry Index
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem className="text-destructive focus:text-destructive">
+                                <Trash2 size={14} />
+                                Remove File
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </TableCell>
                       </TableRow>
                     ))}

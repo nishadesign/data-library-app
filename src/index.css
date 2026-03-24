@@ -79,6 +79,7 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
   --color-surface-hover: var(--surface-hover);
+  --color-tooltip-ai: var(--tooltip-ai);
   --color-global-header: var(--global-header);
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
@@ -162,6 +163,7 @@
   --ring: #066afe;
 
   --surface-hover: #ebebeb;
+  --tooltip-ai: #032D60;
   --global-header: #001639;
 
   --sidebar: #ffffff;
@@ -235,6 +237,7 @@ body {
   --ring: #60a5fa;
 
   --surface-hover: #334155;
+  --tooltip-ai: #032D60;
   --global-header: #0a1020;
 
   --chart-1: oklch(0.488 0.243 264.376);
