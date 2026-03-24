@@ -255,6 +255,7 @@ export default function LibraryDetail({ onCancel, onSave }) {
                   <ChevronDown size={12} />
                 </span>
                 <span className="text-[15px] font-bold text-foreground">Files</span>
+                <span className="text-sm text-muted-foreground font-normal ml-1">· You can add up to 1000 files per library</span>
               </CollapsibleTrigger>
               {pendingFiles.length > 0 && filesOpen && (
                   <div className="flex items-center gap-3">
@@ -288,9 +289,6 @@ export default function LibraryDetail({ onCancel, onSave }) {
                       <span className="text-sm font-bold text-primary cursor-pointer font-sans hover:underline">Browse</span>
                       <span className="text-sm text-muted-foreground font-sans">&nbsp;Or drop files</span>
                     </div>
-                    <p className="m-0 mt-2 text-sm text-muted-foreground font-sans">
-                      AI will scan uploaded data for quality issues and recommend fixes after save.
-                    </p>
                   </div>
                 ) : (
                   <div className="border border-border rounded-lg overflow-hidden">

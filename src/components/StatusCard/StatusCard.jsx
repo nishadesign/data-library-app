@@ -35,6 +35,16 @@ function StepConnector({ status }) {
   )
 }
 
+function getStatusDescription(steps) {
+  const allDefault = steps.every(s => s.status === 'default')
+  if (allDefault) return 'Add data and we will take care of the processing.'
+  const allReady = steps.every(s => s.status === 'ready')
+  if (allReady) return 'All done! Your data is indexed and ready for agents to use.'
+  const hasError = steps.some(s => s.status === 'error')
+  if (hasError) return 'Something went wrong during processing. You can retry the failed step.'
+  return 'Processing your data — this may take a few minutes. You can check back later.'
+}
+
 export default function StatusCard({ steps, defaultOpen = false }) {
   const [open, setOpen] = useState(false)
 
@@ -56,9 +66,8 @@ export default function StatusCard({ steps, defaultOpen = false }) {
 
         <CollapsibleContent className="overflow-hidden data-[state=open]:animate-[collapsible-down_280ms_cubic-bezier(0.16,1,0.3,1)] data-[state=closed]:animate-[collapsible-up_220ms_cubic-bezier(0.4,0,1,1)]">
           <div className="px-6 pb-6">
-            <p className="text-sm text-foreground leading-[1.55] m-0 mb-6 font-sans">
-              Data processing may take several minutes. You can check back later! If you add or
-              update data in your this library, your search index will automatically refresh.
+            <p className="text-sm text-muted-foreground leading-[1.55] m-0 mb-6 font-sans">
+              {getStatusDescription(steps)}
             </p>
 
             <div className="flex flex-col pl-1">
