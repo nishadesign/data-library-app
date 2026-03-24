@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react'
-import { ChevronDown, Search, Plus, MoreHorizontal, ArrowUpDown, X, Trash2 } from 'lucide-react'
+import { ChevronDown, Search, Plus, MoreHorizontal, ArrowUpDown, X, Trash2, Sparkles } from 'lucide-react'
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
 import { Textarea } from '../ui/textarea'
@@ -22,7 +22,7 @@ const DEFAULT_STEPS = [
   { name: 'Indexing data', status: 'default' },
 ]
 
-function AgentToolCard({ libraryName }) {
+function AgentToolCard({ libraryName, hasFiles }) {
   const [open, setOpen] = useState(false)
 
   return (
@@ -37,14 +37,22 @@ function AgentToolCard({ libraryName }) {
 
         <CollapsibleContent>
           <div className="px-6 pb-5">
-            <p className="text-sm text-foreground leading-[1.55] m-0 mb-3 font-sans">
-              To use this data, add the retriever action to the topic
-            </p>
-            <a href="#" className="inline-flex items-center gap-2 text-sm text-primary font-sans font-normal no-underline hover:underline">
-              <RetrieverIcon size={18} />
-              Get information from {libraryName}
-              <ArrowUpRight size={11} />
-            </a>
+            {hasFiles ? (
+              <>
+                <p className="text-sm text-foreground leading-[1.55] m-0 mb-3 font-sans">
+                  To use this data, simply @agent-tool in the Topic
+                </p>
+                <a href="#" className="inline-flex items-center gap-2 text-sm text-primary font-sans font-normal no-underline hover:underline">
+                  <RetrieverIcon size={18} />
+                  Get information from {libraryName}
+                  <ArrowUpRight size={11} />
+                </a>
+              </>
+            ) : (
+              <p className="text-sm text-muted-foreground leading-[1.55] m-0 font-sans">
+                Agent tool will be created after you add data to this library.
+              </p>
+            )}
           </div>
         </CollapsibleContent>
       </Card>
@@ -60,6 +68,7 @@ export default function LibraryDetail({ onCancel, onSave }) {
   const [filesOpen, setFilesOpen] = useState(true)
   const [dragOver, setDragOver] = useState(false)
   const [useAI, setUseAI] = useState(true)
+  const [showAIWarning, setShowAIWarning] = useState(false)
   const [pendingFiles, setPendingFiles] = useState([])
   const [rawFiles, setRawFiles] = useState([])
   const [saving, setSaving] = useState(false)
@@ -213,16 +222,28 @@ export default function LibraryDetail({ onCancel, onSave }) {
           <Switch
             id="useAI"
             checked={useAI}
-            onCheckedChange={setUseAI}
+            onCheckedChange={(checked) => {
+              if (!checked) {
+                setShowAIWarning(true)
+              } else {
+                setUseAI(true)
+              }
+            }}
           />
-          <Label htmlFor="useAI" className="text-sm text-foreground font-normal cursor-pointer">
-            Use Intelligent Context to process content, extract text, tables, images and structures from files, then flag quality issues and suggest cleanup fixes.
+          <Label htmlFor="useAI" className="text-sm text-foreground font-normal cursor-pointer inline-flex items-center gap-1.5">
+            Use Intelligent Context to process content, extract text, tables, images and structures from files.
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Sparkles size={14} className="text-primary shrink-0" />
+              </TooltipTrigger>
+              <TooltipContent className="bg-tooltip-ai">This feature uses LLM to process content</TooltipContent>
+            </Tooltip>
           </Label>
         </div>
       </Card>
 
       <div className="flex-1 p-6 pb-0 overflow-y-auto min-h-0">
-        <AgentToolCard libraryName={libraryName} />
+        <AgentToolCard libraryName={libraryName} hasFiles={pendingFiles.length > 0} />
         <StatusCard steps={DEFAULT_STEPS} defaultOpen={false} />
 
         {/* Files Section */}
@@ -369,6 +390,43 @@ export default function LibraryDetail({ onCancel, onSave }) {
           )
         )}
       </div>
+
+      {showAIWarning && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4" onClick={() => setShowAIWarning(false)}>
+          <div
+            className="w-full max-w-lg rounded-xl border border-border bg-background shadow-xl"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="ai-warning-title"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="px-6 pt-6 pb-4 border-b border-border text-center">
+              <h3 id="ai-warning-title" className="m-0 text-base font-semibold text-foreground font-sans">
+                Disable Intelligent Context?
+              </h3>
+            </div>
+            <div className="px-6 pt-4 pb-4 text-center">
+              <p className="mt-0 mb-0 text-sm text-muted-foreground leading-relaxed">
+                Without Intelligent Context, processing may be slower and complex content like images and data tables may not index accurately.
+              </p>
+            </div>
+            <div className="flex justify-center gap-3 px-6 py-4 border-t border-border">
+              <Button variant="ghost" onClick={() => setShowAIWarning(false)}>
+                Not Sure
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() => {
+                  setUseAI(false)
+                  setShowAIWarning(false)
+                }}
+              >
+                Yes, Disable
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
