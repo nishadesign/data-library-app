@@ -19,7 +19,7 @@ import {
   DropdownMenuSeparator,
 } from '../ui/dropdown-menu'
 import StatusCard from '../StatusCard/StatusCard'
-import { RetrieverIcon, ArrowUpRight } from '../../assets/icons'
+import AgentToolCard from '../AgentToolCard/AgentToolCard'
 import { api } from '../../lib/api'
 import {
   createRecommendationsForFiles,
@@ -49,52 +49,6 @@ const PIPELINE_TIMINGS = [
   { name: 'Building agent tool', duration: 2000, description: 'Creating tool so agent can use this data for context.' },
   { name: 'Indexing data', duration: 5000, description: "We're structuring your data so it's easy to search, manage, and use over time." },
 ]
-
-function AgentToolCard({ libraryName, defaultOpen = false, autoExpandSignal = 0, forceOpen = false, showContent = true }) {
-  const [open, setOpen] = useState(defaultOpen)
-
-  useEffect(() => {
-    if (autoExpandSignal > 0) {
-      setOpen(true)
-    }
-  }, [autoExpandSignal])
-
-  useEffect(() => {
-    if (forceOpen) {
-      setOpen(true)
-    }
-  }, [forceOpen])
-
-  return (
-    <Collapsible open={open} onOpenChange={setOpen}>
-      <Card className="mb-4 overflow-hidden rounded-xl p-0">
-        <CollapsibleTrigger className="flex items-center gap-2 py-4 px-6 cursor-pointer bg-transparent border-none w-full text-left font-sans hover:opacity-85">
-          <span className={`flex items-center transition-transform duration-200 ${open ? 'rotate-0' : '-rotate-90'}`}>
-            <ChevronDown size={12} />
-          </span>
-          <span className="text-[15px] font-bold text-foreground">Agent Tool</span>
-        </CollapsibleTrigger>
-
-        <CollapsibleContent>
-          {showContent ? (
-            <div className="px-6 pb-5">
-              <p className="text-sm text-foreground leading-[1.55] m-0 mb-3 font-sans">
-                To use this data, simply @agent-tool in the Topic
-              </p>
-              <a href="#" className="inline-flex items-center gap-2 text-sm text-primary font-sans font-normal no-underline hover:underline">
-                <RetrieverIcon size={18} />
-                Get information from {libraryName}
-                <ArrowUpRight size={11} />
-              </a>
-            </div>
-          ) : (
-            <div className="px-6 pb-5" />
-          )}
-        </CollapsibleContent>
-      </Card>
-    </Collapsible>
-  )
-}
 
 const DEMO_READY_STEPS = [
   { name: 'Uploading files', status: 'ready' },
@@ -512,7 +466,7 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
 
   const agentToolReady = pipelineSteps.some(
     s => s.name === 'Building agent tool' && s.status === 'ready'
-  )
+  ) || library.status === 'Ready'
 
   useEffect(() => {
     if (!prevAgentToolReadyRef.current && agentToolReady) {
@@ -695,7 +649,7 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
           defaultOpen={false}
           autoExpandSignal={agentToolAutoExpandSignal}
           forceOpen={isDemoReady}
-          showContent={!isDemoFailed}
+          agentToolReady={agentToolReady}
         />
 
         {/* Status card */}

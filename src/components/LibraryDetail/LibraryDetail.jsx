@@ -11,7 +11,7 @@ import { Tooltip, TooltipTrigger, TooltipContent } from '../ui/tooltip'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../ui/table'
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '../ui/collapsible'
 import StatusCard from '../StatusCard/StatusCard'
-import { RetrieverIcon, ArrowUpRight } from '../../assets/icons'
+import AgentToolCard from '../AgentToolCard/AgentToolCard'
 import { api } from '../../lib/api'
 
 const DEFAULT_STEPS = [
@@ -21,44 +21,6 @@ const DEFAULT_STEPS = [
   { name: 'Building agent tool', status: 'default' },
   { name: 'Indexing data', status: 'default' },
 ]
-
-function AgentToolCard({ libraryName, hasFiles }) {
-  const [open, setOpen] = useState(false)
-
-  return (
-    <Collapsible open={open} onOpenChange={setOpen}>
-      <Card className="mb-4 overflow-hidden p-0">
-        <CollapsibleTrigger className="flex items-center gap-2 py-4 px-6 cursor-pointer bg-transparent border-none w-full text-left font-sans hover:opacity-85">
-          <span className={`flex items-center transition-transform duration-200 ${open ? 'rotate-0' : '-rotate-90'}`}>
-            <ChevronDown size={12} />
-          </span>
-          <span className="text-[15px] font-bold text-foreground">Agent Tool</span>
-        </CollapsibleTrigger>
-
-        <CollapsibleContent>
-          <div className="px-6 pb-5">
-            {hasFiles ? (
-              <>
-                <p className="text-sm text-foreground leading-[1.55] m-0 mb-3 font-sans">
-                  To use this data, simply @agent-tool in the Topic
-                </p>
-                <a href="#" className="inline-flex items-center gap-2 text-sm text-primary font-sans font-normal no-underline hover:underline">
-                  <RetrieverIcon size={18} />
-                  Get information from {libraryName}
-                  <ArrowUpRight size={11} />
-                </a>
-              </>
-            ) : (
-              <p className="text-sm text-muted-foreground leading-[1.55] m-0 font-sans">
-                Agent tool will be created after you add data to this library.
-              </p>
-            )}
-          </div>
-        </CollapsibleContent>
-      </Card>
-    </Collapsible>
-  )
-}
 
 export default function LibraryDetail({ onCancel, onSave }) {
   const [dataSpace, setDataSpace] = useState('Default')
@@ -243,7 +205,7 @@ export default function LibraryDetail({ onCancel, onSave }) {
       </Card>
 
       <div className="flex-1 p-6 pb-0 overflow-y-auto min-h-0">
-        <AgentToolCard libraryName={libraryName} hasFiles={pendingFiles.length > 0} />
+        <AgentToolCard />
         <StatusCard steps={DEFAULT_STEPS} defaultOpen={false} />
 
         {/* Files Section */}
