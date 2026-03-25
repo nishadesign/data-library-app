@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { ChevronDown } from 'lucide-react'
+import { ChevronDown, Check } from 'lucide-react'
 import { ArrowUpRight } from '../../assets/icons'
 import { Card } from '../ui/card'
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '../ui/collapsible'
@@ -12,13 +12,15 @@ function StepDot({ status }) {
     error: 'bg-destructive',
   }
   const isInProgress = status === 'inProgress'
+  const isReady = status === 'ready'
 
   return (
-    <div className={`w-3 h-3 rounded-full shrink-0 flex items-center justify-center relative z-[1] transition-[background-color,border-color,box-shadow,transform,opacity] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${dotStyles[status] || dotStyles.default}`}>
+    <div className={`w-5 h-5 rounded-full shrink-0 flex items-center justify-center relative z-[1] transition-[background-color,border-color,box-shadow,transform,opacity] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${dotStyles[status] || dotStyles.default}`}>
       <span className={`absolute inset-0 rounded-full bg-success/30 animate-pulse-ring transition-opacity duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${isInProgress ? 'opacity-100' : 'opacity-0'}`} />
       <span className={`absolute inset-0 flex items-center justify-center transition-[opacity,transform] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${isInProgress ? 'opacity-100 scale-100' : 'opacity-0 scale-75'}`}>
-        <span className="w-1.5 h-1.5 rounded-full bg-success" />
+        <span className="w-2.5 h-2.5 rounded-full bg-success" />
       </span>
+      <Check className={`text-white transition-[opacity,transform] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${isReady ? 'opacity-100 scale-100' : 'opacity-0 scale-75'}`} size={12} strokeWidth={3} />
     </div>
   )
 }
@@ -73,7 +75,7 @@ export default function StatusCard({ steps, defaultOpen = false }) {
             <div className="flex flex-col pl-1">
               {steps.map((step, i) => (
                 <div className="flex gap-3 relative min-h-12" key={i}>
-                  <div className="flex flex-col items-center w-3 shrink-0 relative">
+                  <div className="flex flex-col items-center w-5 shrink-0 relative">
                     <StepDot status={step.status} />
                     {i < steps.length - 1 && <StepConnector status={step.status} />}
                   </div>
