@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { ChevronDown, Check } from 'lucide-react'
-import { ArrowUpRight } from '../../assets/icons'
+import { ArrowUpRight, ErrorIcon } from '../../assets/icons'
 import { Card } from '../ui/card'
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '../ui/collapsible'
 
@@ -9,10 +9,11 @@ function StepDot({ status }) {
     default: 'border-2 border-input bg-background',
     inProgress: 'bg-success/30',
     ready: 'bg-success',
-    error: 'bg-destructive',
+    error: 'bg-transparent',
   }
   const isInProgress = status === 'inProgress'
   const isReady = status === 'ready'
+  const isError = status === 'error'
 
   return (
     <div className={`w-5 h-5 rounded-full shrink-0 flex items-center justify-center relative z-[1] transition-[background-color,border-color,box-shadow,transform,opacity] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${dotStyles[status] || dotStyles.default}`}>
@@ -21,6 +22,9 @@ function StepDot({ status }) {
         <span className="w-2.5 h-2.5 rounded-full bg-success" />
       </span>
       <Check className={`text-white transition-[opacity,transform] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${isReady ? 'opacity-100 scale-100' : 'opacity-0 scale-75'}`} size={12} strokeWidth={3} />
+      <span className={`absolute inset-0 flex items-center justify-center transition-[opacity,transform] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${isError ? 'opacity-100 scale-100' : 'opacity-0 scale-75'}`}>
+        <ErrorIcon className="text-destructive" size={20} />
+      </span>
     </div>
   )
 }
@@ -49,12 +53,28 @@ function getStatusDescription(steps) {
 
 export default function StatusCard({ steps, defaultOpen = false }) {
   const [open, setOpen] = useState(false)
+  const hasCompletedOnceRef = useRef(false)
 
   useEffect(() => {
-    if (!defaultOpen) return
+    if (!defaultOpen || hasCompletedOnceRef.current) return
     const frame = window.requestAnimationFrame(() => setOpen(true))
     return () => window.cancelAnimationFrame(frame)
   }, [defaultOpen])
+
+  useEffect(() => {
+    const allReady = steps.length > 0 && steps.every(s => s.status === 'ready')
+    const hasError = steps.some(s => s.status === 'error')
+
+    if (allReady) {
+      hasCompletedOnceRef.current = true
+      const timer = setTimeout(() => setOpen(false), 1500)
+      return () => clearTimeout(timer)
+    }
+
+    if (hasError) {
+      setOpen(true)
+    }
+  }, [steps])
 
   return (
     <Collapsible open={open} onOpenChange={setOpen}>

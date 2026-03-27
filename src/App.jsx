@@ -47,7 +47,7 @@ export default function App() {
       ? { ...library, ...libraryOverrides[library.id] }
       : library
     setSavedLibrary(nextLibrary)
-    setAutoExpandStatusOnEnter(Boolean(nextLibrary?.isDemo && nextLibrary?.demoState === 'ready'))
+    setAutoExpandStatusOnEnter(false)
     setActiveTab('libraryView')
   }
 
