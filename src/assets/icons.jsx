@@ -101,6 +101,12 @@ export const RetrieverIcon = ({ size = 24, ...props }) => (
   </svg>
 )
 
+export const ErrorIcon = ({ size = 16, ...props }) => (
+  <svg width={size} height={size} viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
+    <path fillRule="evenodd" clipRule="evenodd" d="M7.99985 0.615234C3.93831 0.615234 0.615234 3.93831 0.615234 7.99985C0.615234 12.0614 3.93831 15.3845 7.99985 15.3845C12.0614 15.3845 15.3845 12.0614 15.3845 7.99985C15.3845 3.93831 12.0614 0.615234 7.99985 0.615234ZM2.46141 7.99982C2.46141 4.95367 4.95372 2.46136 7.99987 2.46136C9.19987 2.46136 10.3076 2.83059 11.1999 3.47675L3.4768 11.1998C2.83064 10.3075 2.46141 9.19982 2.46141 7.99982V7.99982ZM7.99973 13.5383C6.79973 13.5383 5.69204 13.1691 4.79973 12.523L12.5228 4.79988C13.169 5.69219 13.5382 6.79988 13.5382 7.99988C13.5382 11.046 11.0459 13.5383 7.99973 13.5383Z" fill="currentColor"/>
+  </svg>
+)
+
 export const ArrowUpRight = ({ size = 24, ...props }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
     <path d="M6 18L18 6M18 6H10M18 6V14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>

@@ -302,7 +302,7 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
     return unsubscribe
   }, [library?.id, library?.isDemo, library?.status, persistLibraryPatch, runClientPipeline])
 
-  const statusCardKey = `${library?.id || 'library'}-${(autoExpandStatusOnEnter || isDemoReady) ? 'open' : 'closed'}`
+  const statusCardKey = `${library?.id || 'library'}-${(autoExpandStatusOnEnter || isDemoFailed) ? 'open' : 'closed'}`
   const selectedFixFile = files.find((file) => file.id === selectedFixFileId) || null
   const selectedFileRecommendations = useMemo(
     () => recommendations.filter(
@@ -653,7 +653,7 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
         />
 
         {/* Status card */}
-        <StatusCard key={statusCardKey} steps={enrichedSteps} defaultOpen={autoExpandStatusOnEnter || isDemoReady} />
+        <StatusCard key={statusCardKey} steps={enrichedSteps} defaultOpen={autoExpandStatusOnEnter || isDemoFailed} />
 
         {/* Files card */}
         <Collapsible open={filesOpen} onOpenChange={setFilesOpen}>
