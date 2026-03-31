@@ -67,8 +67,6 @@ export default function StatusCard({ steps, defaultOpen = false }) {
 
     if (allReady) {
       hasCompletedOnceRef.current = true
-      const timer = setTimeout(() => setOpen(false), 1500)
-      return () => clearTimeout(timer)
     }
 
     if (hasError) {
