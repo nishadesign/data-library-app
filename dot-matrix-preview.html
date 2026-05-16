@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dot Matrix Animation Preview</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: #f5f5f5;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      display: flex;
+      flex-direction: row;
+      align-items: flex-start;
+      justify-content: center;
+      gap: 60px;
+      padding: 40px;
+    }
+
+    .preview-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 24px;
+      padding-top: 20px;
+    }
+
+    .pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px dashed #c9c9c9;
+      background: white;
+    }
+
+    .pill-label {
+      font-size: 13px;
+      color: #939393;
+    }
+
+    /* Dot Matrix */
+    .dot-matrix {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--dot-gap, 2px);
+      width: 14px;
+      height: 14px;
+    }
+
+    .dot {
+      width: var(--dot-size, 3px);
+      height: var(--dot-size, 3px);
+      border-radius: 50%;
+      background: var(--dot-color, #939393);
+    }
+
+
+    /* Controls */
+    .controls {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      background: white;
+      padding: 24px;
+      border-radius: 12px;
+      min-width: 320px;
+      border: 1px solid #e5e5e5;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+
+    .control {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .control label {
+      font-size: 12px;
+      color: #666;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .control input[type="range"] {
+      width: 100%;
+      accent-color: #0176d3;
+    }
+
+    .control input[type="color"] {
+      width: 100%;
+      height: 32px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    h2 {
+      color: #2e2e2e;
+      font-size: 14px;
+      font-weight: 500;
+      margin: 0 0 8px 0;
+    }
+
+    .scales {
+      display: flex;
+      gap: 60px;
+      margin-top: 24px;
+    }
+
+    .scale-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      padding: 16px;
+    }
+
+    .scale-label {
+      font-size: 11px;
+      color: #888;
+    }
+
+    .scale-2x .dot-matrix { transform: scale(2); }
+    .scale-3x .dot-matrix { transform: scale(3); }
+    .scale-4x .dot-matrix { transform: scale(4); }
+
+    .phase-info {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-top: 16px;
+      font-size: 11px;
+      color: #888;
+    }
+
+    .phase-info span {
+      font-family: 'SF Mono', Monaco, monospace;
+    }
+
+    .phase-info .p1 { color: #0176d3; }
+    .phase-info .p2 { color: #10b981; }
+    .phase-info .p3 { color: #f59e0b; }
+    .phase-info .p4 { color: #ef4444; }
+    .phase-info .p5 { color: #8b5cf6; }
+    .phase-info .p6 { color: #ec4899; }
+
+    .code-output {
+      background: #f8f8f8;
+      border: 1px solid #e5e5e5;
+      border-radius: 8px;
+      padding: 16px;
+      margin-top: 16px;
+      font-family: 'SF Mono', Monaco, monospace;
+      font-size: 11px;
+      color: #333;
+      white-space: pre;
+      overflow-x: auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="preview-container">
+    <h2>Snake Dot Matrix Animation (6 Phases)</h2>
+
+    <div class="pill" id="pill">
+      <div class="dot-matrix" id="matrix"></div>
+      <span class="pill-label">files-for-context</span>
+    </div>
+
+    <div class="scales">
+      <div class="scale-item scale-2x">
+        <span class="scale-label">2x</span>
+        <div class="dot-matrix" id="matrix2x"></div>
+      </div>
+      <div class="scale-item scale-4x">
+        <span class="scale-label">4x</span>
+        <div class="dot-matrix" id="matrix4x"></div>
+      </div>
+    </div>
+
+    <div class="phase-info">
+      <span class="p1">P1: 1→2→3→6→5→4→7→8→9</span>
+      <span class="p2">P2: 9→6→3→2→5→8→7→4→1</span>
+      <span class="p3">P3: 1→2→5→8→9→6→3</span>
+      <span class="p4">P4: 3→2→1→4→5→6→9→8→7</span>
+      <span class="p5">P5: 7→4→1→2→5→8→9→6→3</span>
+      <span class="p6">P6: 3→2→5→8→7→4→1 → loop</span>
+    </div>
+  </div>
+
+  <div class="controls">
+    <h2>Snake Controls</h2>
+    
+    <div class="control">
+      <label>Cycle Duration <span id="cycleVal">6s</span></label>
+      <input type="range" id="cycleDuration" min="2" max="12" step="0.5" value="6" oninput="updateAll()">
+    </div>
+
+    <div class="control">
+      <label>Tail Length <span id="tailVal">3 dots</span></label>
+      <input type="range" id="tailLength" min="1" max="5" step="1" value="3" oninput="updateAll()">
+    </div>
+
+    <div class="control">
+      <label>Head Brightness <span id="headVal">1</span></label>
+      <input type="range" id="headBrightness" min="0.7" max="1" step="0.05" value="1" oninput="updateAll()">
+    </div>
+
+    <div class="control">
+      <label>Tail Fade <span id="fadeVal">0.5</span></label>
+      <input type="range" id="tailFade" min="0.3" max="0.8" step="0.05" value="0.5" oninput="updateAll()">
+    </div>
+
+    <div class="control">
+      <label>Dim Opacity <span id="dimVal">0.2</span></label>
+      <input type="range" id="dimOpacity" min="0.1" max="0.4" step="0.05" value="0.2" oninput="updateAll()">
+    </div>
+
+    <h2 style="margin-top: 16px;">Cicada Path Variation</h2>
+    
+    <div class="control">
+      <label>
+        <span>Prime Path Cycling</span>
+        <input type="checkbox" id="primePathEnabled" onchange="updateAll()" checked style="margin-left: 8px;">
+      </label>
+    </div>
+
+    <div class="control">
+      <label>Path Variations <span id="pathCountVal">5</span></label>
+      <input type="range" id="pathCount" min="3" max="7" step="1" value="5" oninput="updateAll()">
+      <span style="font-size: 10px; color: #888;">More = less predictable</span>
+    </div>
+
+    <div id="cicadaInfo" style="font-size: 11px; color: #666; padding: 8px; background: #f0f0f0; border-radius: 4px; margin-top: 4px;">
+      5 paths × 6s = <strong>30s</strong> before any path repeats
+    </div>
+
+    <h2 style="margin-top: 16px;">Appearance</h2>
+
+    <div class="control">
+      <label>Dot Size <span id="dotSizeVal">3px</span></label>
+      <input type="range" id="dotSize" min="2" max="5" step="0.5" value="3" oninput="updateVar('--dot-size', this.value + 'px'); document.getElementById('dotSizeVal').textContent = this.value + 'px'">
+    </div>
+
+    <div class="control">
+      <label>Dot Gap <span id="dotGapVal">2px</span></label>
+      <input type="range" id="dotGap" min="1" max="4" step="0.5" value="2" oninput="updateVar('--dot-gap', this.value + 'px'); document.getElementById('dotGapVal').textContent = this.value + 'px'">
+    </div>
+
+    <div class="control">
+      <label>Dot Color</label>
+      <input type="color" id="dotColor" value="#939393" oninput="updateVar('--dot-color', this.value)">
+    </div>
+
+    <div class="code-output" id="codeOutput"></div>
+    
+    <div style="display: flex; gap: 8px; margin-top: 12px;">
+      <button onclick="copyConfig()" style="flex: 1; padding: 10px 16px; border-radius: 6px; border: 1px solid #e5e5e5; background: white; color: #333; cursor: pointer; font-size: 13px; font-weight: 500;">
+        Copy Config
+      </button>
+      <button onclick="copyReactCode()" style="flex: 1; padding: 10px 16px; border-radius: 6px; border: none; background: #0176d3; color: white; cursor: pointer; font-size: 13px; font-weight: 500;">
+        Copy React Code
+      </button>
+    </div>
+    <div id="copyFeedback" style="text-align: center; font-size: 12px; color: #10b981; margin-top: 8px; opacity: 0; transition: opacity 0.2s;"></div>
+  </div>
+
+  <script>
+    // Grid mapping (1-indexed → 0-indexed):
+    // 1=0, 2=1, 3=2, 4=3, 5=4, 6=5, 7=6, 8=7, 9=8
+    //
+    // Phase 1: 1-2-3-6-5-4-7-8-9 → 0,1,2,5,4,3,6,7,8
+    // Phase 2: 9-6-3-2-5-8-7-4-1 → (continue from 8) 5,2,1,4,7,6,3,0
+    // Phase 3: 1-2-5-8-9-6-3 → (continue from 0) 1,4,7,8,5,2
+    // Phase 4: 3-2-1-4-5-6-9-8-7 → (continue from 2) 1,0,3,4,5,8,7,6
+    // Phase 5: 7-4-1-2-5-8-9-6-3 → (continue from 6) 3,0,1,4,7,8,5,2
+    // Phase 6: 3-2-5-8-7-4-1 → (continue from 2) 1,4,7,6,3,0
+    // Loop back to Phase 1 (starts at 0)
+    
+    // Multiple snake path variations for cicada-style unpredictability
+    
+    // Path A: Original zigzag snake (45 steps)
+    const pathA = [
+      0, 1, 2, 5, 4, 3, 6, 7, 8,
+      5, 2, 1, 4, 7, 6, 3, 0,
+      1, 4, 7, 8, 5, 2,
+      1, 0, 3, 4, 5, 8, 7, 6,
+      3, 0, 1, 4, 7, 8, 5, 2,
+      1, 4, 7, 6, 3, 0
+    ];
+    
+    // Path B: Spiral inward then outward
+    const pathB = [
+      0, 1, 2, 5, 8, 7, 6, 3, 4,
+      5, 2, 1, 0, 3, 6, 7, 8,
+      5, 4, 3, 0, 1, 2,
+      5, 8, 7, 6, 3, 4, 1, 0,
+      3, 6, 7, 4, 1, 2, 5, 8,
+      7, 4, 1, 0, 3, 6, 0
+    ];
+    
+    // Path C: Diagonal cross patterns
+    const pathC = [
+      0, 4, 8, 5, 2, 1, 0, 3, 6,
+      7, 8, 5, 4, 3, 0, 1, 2,
+      5, 8, 7, 4, 1, 2,
+      5, 6, 3, 0, 1, 4, 7, 8,
+      5, 2, 1, 4, 3, 6, 7, 4,
+      1, 0, 3, 6, 7, 4, 0
+    ];
+    
+    // Path D: Figure-8 pattern
+    const pathD = [
+      4, 1, 2, 5, 4, 3, 0, 1, 4,
+      7, 6, 3, 4, 5, 8, 7, 4,
+      1, 0, 3, 6, 7, 8,
+      5, 2, 1, 4, 7, 8, 5, 4,
+      3, 0, 1, 2, 5, 8, 7, 6,
+      3, 4, 5, 2, 1, 0
+    ];
+    
+    // Path E: Bouncing corners
+    const pathE = [
+      0, 2, 8, 6, 0, 4, 8, 4, 6,
+      4, 2, 4, 0, 4, 1, 4, 3,
+      4, 5, 4, 7, 4, 8,
+      5, 2, 1, 0, 3, 6, 7, 8,
+      5, 4, 3, 0, 1, 2, 5, 8,
+      7, 6, 3, 4, 1, 0
+    ];
+    
+    const allPaths = [pathA, pathB, pathC, pathD, pathE];
+    
+    function getFullPath(pathCount, primeEnabled) {
+      if (!primeEnabled) return pathA;
+      const selectedPaths = allPaths.slice(0, pathCount);
+      const combined = [];
+      for (let i = 0; i < pathCount; i++) {
+        combined.push(...selectedPaths[i]);
+      }
+      return combined;
+    }
+    
+    let fullPath = pathA;
+
+    function updateVar(prop, value) {
+      document.documentElement.style.setProperty(prop, value);
+    }
+
+    function createDotMatrix(containerId) {
+      const container = document.getElementById(containerId);
+      container.innerHTML = '';
+      
+      const cycle = parseFloat(document.getElementById('cycleDuration').value);
+      const tailLength = parseInt(document.getElementById('tailLength').value);
+      const headBright = parseFloat(document.getElementById('headBrightness').value);
+      const tailFade = parseFloat(document.getElementById('tailFade').value);
+      const dim = parseFloat(document.getElementById('dimOpacity').value);
+      
+      const primePathEnabled = document.getElementById('primePathEnabled').checked;
+      const pathCount = parseInt(document.getElementById('pathCount').value);
+      
+      // Get the full path based on settings
+      fullPath = getFullPath(pathCount, primePathEnabled);
+      const totalSteps = fullPath.length;
+      
+      // Adjust cycle duration based on path length
+      const adjustedCycle = primePathEnabled ? cycle * pathCount : cycle;
+      
+      // Clear old animation styles
+      const oldStyles = document.querySelectorAll(`style[data-matrix="${containerId}"]`);
+      oldStyles.forEach(s => s.remove());
+      
+      container.style.animation = 'none';
+      
+      for (let dotIndex = 0; dotIndex < 9; dotIndex++) {
+        const dot = document.createElement('div');
+        dot.className = 'dot';
+        dot.dataset.index = dotIndex;
+        
+        // Build keyframes for this dot
+        let keyframeStops = [];
+        
+        for (let step = 0; step < totalSteps; step++) {
+          const pct = (step / totalSteps) * 100;
+          
+          // Check if this dot is part of the snake at this step
+          let opacity = dim;
+          
+          for (let t = 0; t < tailLength; t++) {
+            const checkStep = step - t;
+            if (checkStep >= 0 && fullPath[checkStep] === dotIndex) {
+              if (t === 0) {
+                opacity = headBright;
+              } else {
+                const fadeAmount = (t / tailLength) * (headBright - tailFade);
+                opacity = Math.max(headBright - fadeAmount, tailFade);
+              }
+              break;
+            }
+            // Handle wrap-around for continuous loop
+            const wrapStep = (checkStep + totalSteps) % totalSteps;
+            if (checkStep < 0 && fullPath[wrapStep] === dotIndex) {
+              if (t === 0) {
+                opacity = headBright;
+              } else {
+                const fadeAmount = (t / tailLength) * (headBright - tailFade);
+                opacity = Math.max(headBright - fadeAmount, tailFade);
+              }
+              break;
+            }
+          }
+          
+          keyframeStops.push({ pct: pct.toFixed(2), opacity: opacity.toFixed(2) });
+        }
+        
+        // Add final frame to match first for smooth loop
+        keyframeStops.push({ pct: '100', opacity: keyframeStops[0].opacity });
+        
+        // Optimize keyframes
+        const optimized = [keyframeStops[0]];
+        for (let i = 1; i < keyframeStops.length; i++) {
+          if (keyframeStops[i].opacity !== keyframeStops[i-1].opacity) {
+            if (i > 1 && optimized[optimized.length-1].pct !== keyframeStops[i-1].pct) {
+              optimized.push(keyframeStops[i-1]);
+            }
+            optimized.push(keyframeStops[i]);
+          }
+        }
+        if (optimized[optimized.length-1].pct !== '100') {
+          optimized.push(keyframeStops[keyframeStops.length-1]);
+        }
+        
+        const animName = `snake${containerId}Dot${dotIndex}`;
+        const keyframeCSS = optimized.map(k => `${k.pct}% { opacity: ${k.opacity}; }`).join('\n  ');
+        
+        const style = document.createElement('style');
+        style.dataset.matrix = containerId;
+        style.textContent = `
+          @keyframes ${animName} {
+            ${keyframeCSS}
+          }
+        `;
+        document.head.appendChild(style);
+        
+        dot.style.opacity = dim;
+        dot.style.animation = `${animName} ${adjustedCycle}s linear infinite`;
+        container.appendChild(dot);
+      }
+    }
+
+    function updateAll() {
+      const cycle = document.getElementById('cycleDuration').value;
+      const tail = document.getElementById('tailLength').value;
+      const head = document.getElementById('headBrightness').value;
+      const fade = document.getElementById('tailFade').value;
+      const dim = document.getElementById('dimOpacity').value;
+      const pathCount = document.getElementById('pathCount').value;
+      const primePathEnabled = document.getElementById('primePathEnabled').checked;
+      
+      document.getElementById('cycleVal').textContent = cycle + 's';
+      document.getElementById('tailVal').textContent = tail + ' dots';
+      document.getElementById('headVal').textContent = head;
+      document.getElementById('fadeVal').textContent = fade;
+      document.getElementById('dimVal').textContent = dim;
+      document.getElementById('pathCountVal').textContent = pathCount;
+      
+      // Update cicada info
+      const cicadaInfo = document.getElementById('cicadaInfo');
+      if (primePathEnabled) {
+        const totalCycle = parseFloat(cycle) * parseInt(pathCount);
+        const totalSteps = parseInt(pathCount) * 45; // ~45 steps per path
+        cicadaInfo.innerHTML = `${pathCount} paths × ${cycle}s = <strong>${totalCycle}s</strong> (~${totalSteps} steps) before pattern repeats`;
+        cicadaInfo.style.display = 'block';
+      } else {
+        cicadaInfo.innerHTML = `Single path: 45 steps, ${cycle}s cycle`;
+        cicadaInfo.style.display = 'block';
+      }
+      
+      createDotMatrix('matrix');
+      createDotMatrix('matrix2x');
+      createDotMatrix('matrix4x');
+      
+      updateCode();
+    }
+
+    function updateCode() {
+      const cycle = document.getElementById('cycleDuration').value;
+      const tail = document.getElementById('tailLength').value;
+      const head = document.getElementById('headBrightness').value;
+      const fade = document.getElementById('tailFade').value;
+      const dim = document.getElementById('dimOpacity').value;
+      const size = document.getElementById('dotSize').value;
+      const gap = document.getElementById('dotGap').value;
+      const color = document.getElementById('dotColor').value;
+      const primePathEnabled = document.getElementById('primePathEnabled').checked;
+      const pathCount = document.getElementById('pathCount').value;
+
+      const totalCycle = primePathEnabled ? parseFloat(cycle) * parseInt(pathCount) : parseFloat(cycle);
+      
+      let code = `// Cicada Path Cycling: ${primePathEnabled ? 'ON' : 'OFF'}
+// Paths: ${primePathEnabled ? pathCount : 1}
+// Total cycle: ${totalCycle}s
+
+cycleDuration: ${cycle}s (per path)
+tailLength: ${tail} dots
+headBrightness: ${head}
+tailFade: ${fade}
+dimOpacity: ${dim}
+dotSize: ${size}px
+dotGap: ${gap}px
+color: ${color}`;
+
+      document.getElementById('codeOutput').textContent = code;
+    }
+
+    function showFeedback(msg) {
+      const fb = document.getElementById('copyFeedback');
+      fb.textContent = msg;
+      fb.style.opacity = 1;
+      setTimeout(() => fb.style.opacity = 0, 2000);
+    }
+
+    function copyConfig() {
+      const config = {
+        cycleDuration: document.getElementById('cycleDuration').value + 's',
+        tailLength: document.getElementById('tailLength').value,
+        headBrightness: document.getElementById('headBrightness').value,
+        tailFade: document.getElementById('tailFade').value,
+        dimOpacity: document.getElementById('dimOpacity').value,
+        dotSize: document.getElementById('dotSize').value + 'px',
+        dotGap: document.getElementById('dotGap').value + 'px',
+        dotColor: document.getElementById('dotColor').value
+      };
+      navigator.clipboard.writeText(JSON.stringify(config, null, 2));
+      showFeedback('Config copied to clipboard!');
+    }
+
+    function copyReactCode() {
+      const cycle = document.getElementById('cycleDuration').value;
+      const tail = parseInt(document.getElementById('tailLength').value);
+      const head = document.getElementById('headBrightness').value;
+      const fade = document.getElementById('tailFade').value;
+      const dim = document.getElementById('dimOpacity').value;
+      const size = document.getElementById('dotSize').value;
+      const gap = document.getElementById('dotGap').value;
+      const color = document.getElementById('dotColor').value;
+
+      const code = `function DotMatrixLoader({ className }) {
+  // 6-phase snake path (45 steps)
+  const phase1 = [0, 1, 2, 5, 4, 3, 6, 7, 8];
+  const phase2 = [5, 2, 1, 4, 7, 6, 3, 0];
+  const phase3 = [1, 4, 7, 8, 5, 2];
+  const phase4 = [1, 0, 3, 4, 5, 8, 7, 6];
+  const phase5 = [3, 0, 1, 4, 7, 8, 5, 2];
+  const phase6 = [1, 4, 7, 6, 3, 0];
+  const fullPath = [...phase1, ...phase2, ...phase3, ...phase4, ...phase5, ...phase6];
+  const totalSteps = fullPath.length;
+
+  const getOpacity = (dotIndex, step) => {
+    const tailLength = ${tail};
+    const headBright = ${head};
+    const tailFade = ${fade};
+    const dim = ${dim};
+
+    for (let t = 0; t < tailLength; t++) {
+      const checkStep = ((step - t) + totalSteps) % totalSteps;
+      if (fullPath[checkStep] === dotIndex) {
+        if (t === 0) return headBright;
+        const fadeAmount = (t / tailLength) * (headBright - tailFade);
+        return Math.max(headBright - fadeAmount, tailFade);
+      }
+    }
+    return dim;
+  };
+
+  // Generate keyframes for each dot
+  const keyframes = Array.from({ length: 9 }, (_, dotIndex) => {
+    const frames = [];
+    for (let step = 0; step < totalSteps; step++) {
+      const pct = ((step / totalSteps) * 100).toFixed(2);
+      const opacity = getOpacity(dotIndex, step).toFixed(2);
+      frames.push(\`\${pct}% { opacity: \${opacity}; }\`);
+    }
+    frames.push(\`100% { opacity: \${getOpacity(dotIndex, 0).toFixed(2)}; }\`);
+    return frames.join(' ');
+  });
+
+  return (
+    <div className={cn("grid grid-cols-3 gap-[${gap}px]", className)}>
+      {keyframes.map((kf, i) => (
+        <div
+          key={i}
+          className="w-[${size}px] h-[${size}px] rounded-full"
+          style={{
+            backgroundColor: '${color}',
+            opacity: ${dim},
+            animation: \`dotSnake\${i} ${cycle}s linear infinite\`
+          }}
+        />
+      ))}
+      <style>{\`
+        \${keyframes.map((kf, i) => \`@keyframes dotSnake\${i} { \${kf} }\`).join('\\n')}
+      \`}</style>
+    </div>
+  );
+}`;
+
+      navigator.clipboard.writeText(code);
+      showFeedback('React code copied to clipboard!');
+    }
+
+    // Initialize
+    updateAll();
+  </script>
+</body>
+</html>
