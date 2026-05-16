@@ -16,13 +16,13 @@ function StepDot({ status }) {
   const isError = status === 'error'
 
   return (
-    <div className={`w-5 h-5 rounded-full shrink-0 flex items-center justify-center relative z-[1] transition-[background-color,border-color,box-shadow,transform,opacity] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${dotStyles[status] || dotStyles.default}`}>
-      <span className={`absolute inset-0 rounded-full bg-success/30 animate-pulse-ring transition-opacity duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${isInProgress ? 'opacity-100' : 'opacity-0'}`} />
-      <span className={`absolute inset-0 flex items-center justify-center transition-[opacity,transform] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${isInProgress ? 'opacity-100 scale-100' : 'opacity-0 scale-75'}`}>
+    <div className={`w-5 h-5 rounded-full shrink-0 flex items-center justify-center relative z-[1] transition-[background-color,border-color,box-shadow,transform,opacity] duration-250 ease-[cubic-bezier(0.22,1,0.36,1)] ${dotStyles[status] || dotStyles.default}`}>
+      <span className={`absolute inset-0 rounded-full bg-success/30 animate-pulse-ring transition-opacity duration-250 ease-[cubic-bezier(0.22,1,0.36,1)] ${isInProgress ? 'opacity-100' : 'opacity-0'}`} />
+      <span className={`absolute inset-0 flex items-center justify-center transition-[opacity,transform] duration-250 ease-[cubic-bezier(0.22,1,0.36,1)] ${isInProgress ? 'opacity-100 scale-100' : 'opacity-0 scale-90'}`}>
         <span className="w-2.5 h-2.5 rounded-full bg-success" />
       </span>
-      <Check className={`text-white transition-[opacity,transform] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${isReady ? 'opacity-100 scale-100' : 'opacity-0 scale-75'}`} size={12} strokeWidth={3} />
-      <span className={`absolute inset-0 flex items-center justify-center transition-[opacity,transform] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${isError ? 'opacity-100 scale-100' : 'opacity-0 scale-75'}`}>
+      <Check className={`text-white transition-[opacity,transform] duration-250 ease-[cubic-bezier(0.22,1,0.36,1)] ${isReady ? 'opacity-100 scale-100' : 'opacity-0 scale-90'}`} size={12} strokeWidth={3} />
+      <span className={`absolute inset-0 flex items-center justify-center transition-[opacity,transform] duration-250 ease-[cubic-bezier(0.22,1,0.36,1)] ${isError ? 'opacity-100 scale-100' : 'opacity-0 scale-90'}`}>
         <ErrorIcon className="text-destructive" size={20} />
       </span>
     </div>
@@ -36,7 +36,7 @@ function StepConnector({ status }) {
   return (
     <div className={`w-0.5 flex-1 relative overflow-hidden ${connectorSpacing}`}>
       <div className="absolute inset-0 bg-[repeating-linear-gradient(to_bottom,var(--input)_0px,var(--input)_3px,transparent_3px,transparent_7px)]" />
-      <div className={`absolute inset-0 origin-top bg-success rounded-sm will-change-transform transition-[opacity,transform] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] ${isReady ? 'opacity-100 scale-y-100' : 'opacity-0 scale-y-0'}`} />
+      <div className={`absolute inset-0 origin-top bg-success rounded-sm will-change-transform transition-[opacity,transform] duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] delay-75 ${isReady ? 'opacity-100 scale-y-100' : 'opacity-0 scale-y-0'}`} />
     </div>
   )
 }
@@ -67,8 +67,6 @@ export default function StatusCard({ steps, defaultOpen = false }) {
 
     if (allReady) {
       hasCompletedOnceRef.current = true
-      const timer = setTimeout(() => setOpen(false), 1500)
-      return () => clearTimeout(timer)
     }
 
     if (hasError) {
@@ -100,7 +98,7 @@ export default function StatusCard({ steps, defaultOpen = false }) {
                     {i < steps.length - 1 && <StepConnector status={step.status} />}
                   </div>
                   <div className={`flex flex-col gap-0.5 min-w-0 flex-1 ${i === steps.length - 1 ? 'pb-0' : 'pb-4'}`}>
-                    <span className={`text-sm font-normal font-sans leading-5 truncate transition-colors duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${step.status === 'error' ? 'text-destructive' : 'text-foreground'}`}>
+                    <span className={`text-sm font-normal font-sans leading-5 truncate transition-colors duration-250 ease-[cubic-bezier(0.22,1,0.36,1)] ${step.status === 'error' ? 'text-destructive' : 'text-foreground'}`}>
                       {step.name}
                     </span>
                     <div className="min-h-4 flex items-center min-w-0">

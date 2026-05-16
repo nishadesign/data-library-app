@@ -580,7 +580,7 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
           <>
             <div className={`flex items-center justify-between ${metaCollapsed ? '' : 'mb-4'}`}>
               <div className="flex items-center gap-2.5">
-                <h1 className={`font-bold text-foreground m-0 font-sans transition-all duration-200 ${metaCollapsed ? 'text-base' : 'text-[22px]'}`}>{library.libraryName}</h1>
+                <h1 className={`font-medium text-foreground m-0 font-sans transition-all duration-200 ${metaCollapsed ? 'text-base' : 'text-[22px]'}`}>{library.libraryName}</h1>
                 {metaCollapsed && (
                   <Badge variant={getStatusVariant(displayStatus)}>
                     {displayStatus}

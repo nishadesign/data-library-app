@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react'
-import { Search, Filter, ChevronDown, CloudCog, Database, ArrowUpDown, ChevronRight, Trash2 } from 'lucide-react'
+import React, { useState, useEffect, useRef } from 'react'
+import { Search, Filter, ChevronDown, CloudCog, ArrowUpDown, ChevronRight, Trash2, RotateCw } from 'lucide-react'
 import {
   ArrowUpRight,
 } from '../../assets/icons'
@@ -48,8 +48,10 @@ export default function MainContent({ onNewLibrary, onViewLibrary, refreshKey, l
   const [loading, setLoading] = useState(true)
   const [selected, setSelected] = useState({})
   const [searchQuery, setSearchQuery] = useState('')
+  const [searchExpanded, setSearchExpanded] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const searchInputRef = useRef(null)
 
   function mergeLibraries(nextLibraries, overrides) {
     return nextLibraries.map((library) => (
@@ -120,76 +122,19 @@ export default function MainContent({ onNewLibrary, onViewLibrary, refreshKey, l
       <div className="flex-1 overflow-y-auto min-h-0">
       {/* Title Bar */}
       <div className="flex items-center justify-between py-3 px-6 border-b border-border shrink-0">
-        <div className="flex items-center gap-2.5">
-          <Database size={22} className="text-primary" />
-          <h1 className="text-lg font-bold text-foreground m-0 font-sans">Data Libraries</h1>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-2 border border-input rounded-full px-3 py-[5px] bg-background w-[180px] focus-within:border-ring focus-within:ring-1 focus-within:ring-ring">
-            <Search size={14} className="text-muted-foreground" />
-            <input
-              type="text"
-              placeholder="Search..."
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              className="border-none outline-none text-sm font-sans text-foreground flex-1 bg-transparent placeholder:text-muted-foreground"
-            />
-          </div>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button variant="icon" size="icon" aria-label="Filter">
-                <Filter size={16} />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Filter</TooltipContent>
-          </Tooltip>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="brand">
-                Add Data
-                <ChevronDown size={10} />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="min-w-[260px]">
-              <DropdownMenuItem onClick={() => onNewLibrary?.()}>
-                <img src={filesIcon} alt="Files" width={20} height={20} />
-                <span className="flex-1">Files</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <img src={articleIcon} alt="Articles" width={20} height={20} />
-                <span className="flex-1">Salesforce Knowledge</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <img src={websiteIcon} alt="Websites" width={20} height={20} />
-                <span className="flex-1">Websites</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <img src={retrieverCardIcon} alt="Retrievers" width={20} height={20} />
-                <span className="flex-1">Custom Retrievers</span>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem>
-                <CloudCog size={20} className="text-muted-foreground" />
-                <span className="flex-1">Data Cloud Connectors</span>
-                <ArrowUpRight size={14} className="text-muted-foreground" />
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <img src={mcpIcon} alt="MCP" width={20} height={20} />
-                <span className="flex-1">MCP Servers</span>
-                <ArrowUpRight size={14} className="text-muted-foreground" />
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+        <div className="flex items-center gap-1.5">
+          <span className="text-sm text-muted-foreground font-sans">Agentforce Studio</span>
+          <span className="text-sm text-muted-foreground">/</span>
+          <h1 className="text-sm font-bold text-foreground m-0 font-sans">Data Library</h1>
         </div>
       </div>
 
       <div className="py-7 px-6">
-        <h2 className="text-xl font-bold text-foreground m-0 mb-2 font-sans">
-          Quick start by adding data, we'll handle the rest!
+        <h2 className="text-xl font-medium text-foreground m-0 mb-2 font-sans text-balance">
+          Build agent knowledge in minutes
         </h2>
-        <p className="text-sm text-muted-foreground leading-relaxed m-0 mb-6 font-sans">
-          After you add your data, we'll read it, prepare it for search, spot common quality issues, and suggest fixes before your agent relies on it. You can track progress at each step and review the results before going live.
-          <br />
+        <p className="text-sm text-muted-foreground leading-relaxed m-0 mb-6 font-sans text-pretty">
+          Add data and we'll create a searchable index, set up retrieval, and surface data quality issues—all automatically.{' '}
           <a href="#" className="inline-flex items-center gap-1 text-primary no-underline text-sm font-normal hover:underline">
             Learn more in help
             <ArrowUpRight size={11} className="text-primary" />
@@ -240,6 +185,98 @@ export default function MainContent({ onNewLibrary, onViewLibrary, refreshKey, l
 
         {/* Library list table */}
         {hasLibraries && (
+          <>
+          <div className="flex items-center justify-between gap-4 mb-3">
+            <h3 className="text-base font-semibold text-foreground m-0 font-sans">All Libraries</h3>
+            <div className="flex items-center gap-2">
+              {searchExpanded ? (
+                <div className="flex items-center gap-2 border border-ring rounded-full px-3 py-[5px] bg-background w-[200px] ring-1 ring-ring animate-in fade-in slide-in-from-right-2 duration-150">
+                  <Search size={14} className="text-muted-foreground shrink-0" />
+                  <input
+                    ref={searchInputRef}
+                    type="text"
+                    placeholder="Search..."
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                    onBlur={() => { if (!searchQuery) setSearchExpanded(false) }}
+                    onKeyDown={e => { if (e.key === 'Escape') { setSearchQuery(''); setSearchExpanded(false) } }}
+                    className="border-none outline-none text-sm font-sans text-foreground flex-1 bg-transparent placeholder:text-muted-foreground min-w-0"
+                    autoFocus
+                  />
+                </div>
+              ) : (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      variant="icon" 
+                      size="icon" 
+                      aria-label="Search"
+                      onClick={() => {
+                        setSearchExpanded(true)
+                        setTimeout(() => searchInputRef.current?.focus(), 0)
+                      }}
+                    >
+                      <Search size={16} />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Search</TooltipContent>
+                </Tooltip>
+              )}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="icon" size="icon" aria-label="Refresh">
+                    <RotateCw size={16} />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Refresh</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="icon" size="icon" aria-label="Filter">
+                    <Filter size={16} />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Filter</TooltipContent>
+              </Tooltip>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="brand">
+                    Add Data
+                    <ChevronDown size={10} />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="min-w-[260px]">
+                  <DropdownMenuItem onClick={() => onNewLibrary?.()}>
+                    <img src={filesIcon} alt="Files" width={20} height={20} />
+                    <span className="flex-1">Files</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>
+                    <img src={articleIcon} alt="Articles" width={20} height={20} />
+                    <span className="flex-1">Salesforce Knowledge</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>
+                    <img src={websiteIcon} alt="Websites" width={20} height={20} />
+                    <span className="flex-1">Websites</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>
+                    <img src={retrieverCardIcon} alt="Retrievers" width={20} height={20} />
+                    <span className="flex-1">Custom Retrievers</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem>
+                    <CloudCog size={20} className="text-muted-foreground" />
+                    <span className="flex-1">Data Cloud Connectors</span>
+                    <ArrowUpRight size={14} className="text-muted-foreground" />
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>
+                    <img src={mcpIcon} alt="MCP" width={20} height={20} />
+                    <span className="flex-1">MCP Servers</span>
+                    <ArrowUpRight size={14} className="text-muted-foreground" />
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
           <div className="mb-8 border border-border rounded-lg overflow-hidden">
             <Table>
               <TableHeader>
@@ -247,7 +284,7 @@ export default function MainContent({ onNewLibrary, onViewLibrary, refreshKey, l
                   <TableHead className="w-9 text-center">
                     <Checkbox aria-label="Select all" checked={allSelected} onChange={toggleSelectAll} />
                   </TableHead>
-                  <TableHead><span className="flex items-center gap-1">Name <ArrowUpDown size={10} className="text-muted-foreground" /></span></TableHead>
+                  <TableHead className="font-medium"><span className="flex items-center gap-1">Name <ArrowUpDown size={10} className="text-muted-foreground" /></span></TableHead>
                   <TableHead><span className="flex items-center gap-1">Type <ArrowUpDown size={10} className="text-muted-foreground" /></span></TableHead>
                   <TableHead><span className="flex items-center gap-1">Status <ArrowUpDown size={10} className="text-muted-foreground" /></span></TableHead>
                   <TableHead><span className="flex items-center gap-1">Created By <ArrowUpDown size={10} className="text-muted-foreground" /></span></TableHead>
@@ -277,7 +314,7 @@ export default function MainContent({ onNewLibrary, onViewLibrary, refreshKey, l
                       <StatusIndicator status={lib.status} />
                     </TableCell>
                     <TableCell>{lib.files?.[0]?.uploadedBy || 'orgfarm-epic'}</TableCell>
-                    <TableCell>{formatDate(lib.createdAt)}</TableCell>
+                    <TableCell className="tabular-nums">{formatDate(lib.createdAt)}</TableCell>
                     <TableCell className="text-primary text-sm">
                       {lib.agents || ''}
                     </TableCell>
@@ -289,6 +326,7 @@ export default function MainContent({ onNewLibrary, onViewLibrary, refreshKey, l
               </TableBody>
             </Table>
           </div>
+          </>
         )}
       </div>
       </div>
@@ -314,7 +352,7 @@ export default function MainContent({ onNewLibrary, onViewLibrary, refreshKey, l
             aria-labelledby="delete-libraries-title"
             onClick={e => e.stopPropagation()}
           >
-            <h3 id="delete-libraries-title" className="m-0 text-lg font-semibold text-foreground font-sans">
+            <h3 id="delete-libraries-title" className="m-0 text-lg font-semibold text-foreground font-sans text-balance">
               Delete {selectedIds.length > 1 ? 'libraries' : 'library'}?
             </h3>
             <p className="mt-2 mb-0 text-sm text-muted-foreground leading-relaxed">

@@ -4,7 +4,7 @@ import { ArrowUpRight } from '../../assets/icons'
 export default function DataSourceCard({ icon, label, badges, badgeMore, externalLink, overlay, onClick }) {
   return (
     <button
-      className="group flex flex-col justify-end bg-card rounded-lg p-4 min-h-[108px] cursor-pointer text-left font-sans transition-all gap-3 shadow-[inset_0_0_0_1px_var(--border)] hover:shadow-[inset_0_0_0_2px_var(--primary),0_2px_8px_rgba(2,6,23,0.12)] dark:hover:shadow-[inset_0_0_0_2px_var(--primary),0_2px_10px_rgba(0,0,0,0.35)]"
+      className="group flex flex-col justify-end bg-card rounded-lg p-4 min-h-[108px] cursor-pointer text-left font-sans transition-[box-shadow,transform] gap-3 shadow-[inset_0_0_0_1px_var(--border)] hover:shadow-[inset_0_0_0_2px_var(--primary),0_2px_8px_rgba(2,6,23,0.12)] dark:hover:shadow-[inset_0_0_0_2px_var(--primary),0_2px_10px_rgba(0,0,0,0.35)] active:scale-[0.96]"
       onClick={onClick}
     >
       {icon && (

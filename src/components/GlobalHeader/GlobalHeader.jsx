@@ -17,26 +17,26 @@ export default function GlobalHeader({ isDarkMode, onToggleDarkMode }) {
       </div>
       <div className="flex items-center gap-1 shrink-0">
         <button
-          className={`bg-transparent border-none cursor-pointer p-1.5 rounded flex items-center justify-center ${isDarkMode ? 'text-white/80 hover:text-white hover:bg-white/10' : 'text-muted-foreground hover:text-foreground hover:bg-surface-hover'}`}
+          className={`relative bg-transparent border-none cursor-pointer p-1.5 rounded flex items-center justify-center transition-[color,background-color,transform] active:scale-[0.96] before:absolute before:inset-[-5px] before:content-[''] ${isDarkMode ? 'text-white/80 hover:text-white hover:bg-white/10' : 'text-muted-foreground hover:text-foreground hover:bg-surface-hover'}`}
           aria-label="Settings"
         >
           <Settings size={18} />
         </button>
         <button
-          className={`bg-transparent border-none cursor-pointer p-1.5 rounded flex items-center justify-center ${isDarkMode ? 'text-white/80 hover:text-white hover:bg-white/10' : 'text-muted-foreground hover:text-foreground hover:bg-surface-hover'}`}
+          className={`relative bg-transparent border-none cursor-pointer p-1.5 rounded flex items-center justify-center transition-[color,background-color,transform] active:scale-[0.96] before:absolute before:inset-[-5px] before:content-[''] ${isDarkMode ? 'text-white/80 hover:text-white hover:bg-white/10' : 'text-muted-foreground hover:text-foreground hover:bg-surface-hover'}`}
           aria-label={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
           onClick={() => onToggleDarkMode?.(!isDarkMode)}
         >
           {isDarkMode ? <Moon size={18} /> : <Sun size={18} />}
         </button>
         <button
-          className={`bg-transparent border-none cursor-pointer p-1.5 rounded flex items-center justify-center ${isDarkMode ? 'text-white/80 hover:text-white hover:bg-white/10' : 'text-muted-foreground hover:text-foreground hover:bg-surface-hover'}`}
+          className={`relative bg-transparent border-none cursor-pointer p-1.5 rounded flex items-center justify-center transition-[color,background-color,transform] active:scale-[0.96] before:absolute before:inset-[-5px] before:content-[''] ${isDarkMode ? 'text-white/80 hover:text-white hover:bg-white/10' : 'text-muted-foreground hover:text-foreground hover:bg-surface-hover'}`}
           aria-label="Notifications"
         >
           <Bell size={18} />
         </button>
         <button
-          className={`bg-transparent border-none cursor-pointer p-0.5 ml-1 flex items-center rounded-full ${isDarkMode ? 'hover:shadow-[0_0_0_2px_rgba(255,255,255,0.25)]' : 'hover:shadow-[0_0_0_2px_rgba(0,0,0,0.1)]'}`}
+          className={`bg-transparent border-none cursor-pointer p-0.5 ml-1 flex items-center rounded-full transition-[box-shadow,transform] active:scale-[0.96] ${isDarkMode ? 'hover:shadow-[0_0_0_2px_rgba(255,255,255,0.25)]' : 'hover:shadow-[0_0_0_2px_rgba(0,0,0,0.1)]'}`}
           aria-label="User profile"
         >
           <UserAvatar size={28} />

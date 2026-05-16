@@ -1,10 +1,11 @@
 import React, { useState, useCallback, useEffect } from 'react'
 import GlobalHeader from './components/GlobalHeader/GlobalHeader'
-import AppHeader from './components/AppHeader/AppHeader'
 import Sidebar from './components/Sidebar/Sidebar'
 import MainContent from './components/MainContent/MainContent'
 import LibraryDetail from './components/LibraryDetail/LibraryDetail'
 import LibraryView from './components/LibraryView/LibraryView'
+import AgentBuilderDemo from './components/AgentBuilderDemo/AgentBuilderDemo'
+import PortfolioShowcase from './components/PortfolioShowcase/PortfolioShowcase'
 import { Tabs, TabsContent } from './components/ui/tabs'
 import { TooltipProvider } from './components/ui/tooltip'
 
@@ -16,7 +17,12 @@ export default function App() {
     if (savedTheme === 'light') return false
     return window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false
   })
-  const [activeTab, setActiveTab] = useState('dataLibraries')
+  const [activeTab, setActiveTab] = useState(() => {
+    if (typeof window !== 'undefined' && window.location.hash === '#portfolio') {
+      return 'portfolio'
+    }
+    return 'dataLibraries'
+  })
   const [savedLibrary, setSavedLibrary] = useState(null)
   const [libraryOverrides, setLibraryOverrides] = useState({})
   const [refreshKey, setRefreshKey] = useState(0)
@@ -70,6 +76,11 @@ export default function App() {
     window.localStorage.setItem('data-library-theme', isDarkMode ? 'dark' : 'light')
   }, [isDarkMode])
 
+  // Portfolio mode renders without any app chrome
+  if (activeTab === 'portfolio') {
+    return <PortfolioShowcase />
+  }
+
   return (
     <TooltipProvider delayDuration={300}>
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col h-screen w-screen overflow-hidden font-sans">
@@ -77,13 +88,13 @@ export default function App() {
           isDarkMode={isDarkMode}
           onToggleDarkMode={setIsDarkMode}
         />
-        <AppHeader
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-          libraryName={savedLibrary?.libraryName}
-        />
         <div className="flex flex-1 overflow-hidden">
-          <Sidebar collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed(prev => !prev)} />
+          <Sidebar 
+            collapsed={sidebarCollapsed} 
+            onToggle={() => setSidebarCollapsed(prev => !prev)}
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+          />
           <TabsContent value="dataLibraries" className="flex-1 h-full">
             <MainContent
               onNewLibrary={handleNewLibrary}
@@ -109,6 +120,9 @@ export default function App() {
               />
             </TabsContent>
           )}
+          <TabsContent value="agentBuilder" className="flex-1 h-full">
+            <AgentBuilderDemo />
+          </TabsContent>
         </div>
       </Tabs>
     </TooltipProvider>

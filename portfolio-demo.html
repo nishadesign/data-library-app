@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bot to Agent Migration Demo</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', sans-serif;
+      background: #fff;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 60px;
+    }
+
+    .demo-container {
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      gap: 100px;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 24px;
+      padding: 28px;
+      width: 320px;
+    }
+
+    .traditional-bots-card {
+      margin-top: 0;
+      box-shadow: 
+        0 4px 16px rgba(0, 0, 0, 0.10),
+        0 20px 56px -8px rgba(0, 0, 0, 0.16);
+    }
+
+    .ai-agents-card {
+      margin-top: 80px;
+      opacity: 0;
+      transform: scale(0.95) translateY(20px);
+      filter: blur(4px);
+      box-shadow: 
+        0 4px 12px rgba(0, 0, 0, 0.08),
+        0 16px 48px -8px rgba(0, 0, 0, 0.12);
+      transition: opacity 400ms cubic-bezier(0.23, 1, 0.32, 1), 
+                  transform 400ms cubic-bezier(0.23, 1, 0.32, 1),
+                  filter 400ms cubic-bezier(0.23, 1, 0.32, 1);
+    }
+
+    .ai-agents-card.visible {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+      filter: blur(0);
+    }
+
+    .card-icon {
+      width: 56px;
+      height: 56px;
+      background: radial-gradient(circle at 30% 30%, #0a3a6e 0%, #03234d 70%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 20px;
+      overflow: hidden;
+      box-shadow: inset 0 -2px 4px rgba(0, 0, 0, 0.2),
+                  inset 0 2px 4px rgba(255, 255, 255, 0.1);
+    }
+
+    .card-icon img {
+      width: 60%;
+      height: 60%;
+      object-fit: contain;
+    }
+
+    .card-title {
+      font-size: 24px;
+      font-weight: 500;
+      color: #181818;
+      margin-bottom: 24px;
+      letter-spacing: -0.02em;
+    }
+
+    .stats {
+      display: flex;
+      gap: 40px;
+      margin-bottom: 28px;
+    }
+
+    .stat {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .stat-number {
+      font-size: 36px;
+      font-weight: 500;
+      color: #080707;
+      line-height: 1.1;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.01em;
+    }
+
+    .stat-label {
+      font-size: 14px;
+      font-weight: 400;
+      color: #6b6b6b;
+    }
+
+    .create-agent-btn {
+      background: #066afe;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 10px;
+      font-size: 18px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: transform 160ms cubic-bezier(0.23, 1, 0.32, 1),
+                  background 160ms ease;
+    }
+
+    .create-agent-btn:hover {
+      background: #0559d4;
+    }
+
+    .create-agent-btn:active {
+      transform: scale(0.97);
+    }
+
+
+    .ready-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: #1d1c1d;
+      color: white;
+      padding: 10px 24px;
+      border-radius: 100px;
+      font-size: 18px;
+      font-weight: 500;
+      opacity: 0;
+      transform: scale(0.8);
+    }
+
+    .ready-badge.visible {
+      animation: badgeBounce 500ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+
+    @keyframes badgeBounce {
+      0% {
+        opacity: 0;
+        transform: scale(0.8);
+      }
+      50% {
+        opacity: 1;
+        transform: scale(1.08);
+      }
+      75% {
+        transform: scale(0.97);
+      }
+      100% {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
+    .ready-badge svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    /* Reset button */
+    .reset-btn {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #F3F3F3;
+      border: 1px solid #DDDBDA;
+      color: #181818;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: background 150ms ease;
+    }
+
+    .reset-btn:hover {
+      background: #ECEBEA;
+    }
+
+  </style>
+</head>
+<body>
+  <div class="demo-container">
+    <!-- Traditional Bots Card -->
+    <div class="card traditional-bots-card">
+        <div class="card-icon">
+          <img src="https://www.figma.com/api/mcp/asset/00bed545-3d2f-4707-9a1b-d2e5feb5db20" alt="Bot icon">
+        </div>
+        <h2 class="card-title">Traditional Bots</h2>
+        <div class="stats">
+          <div class="stat">
+            <span class="stat-number">37</span>
+            <span class="stat-label">Dialogs</span>
+          </div>
+          <div class="stat">
+            <span class="stat-number">29</span>
+            <span class="stat-label">Actions</span>
+          </div>
+          <div class="stat">
+            <span class="stat-number">23</span>
+            <span class="stat-label">Intents</span>
+          </div>
+        </div>
+        <button class="create-agent-btn" id="createAgentBtn">Create Agent</button>
+      </div>
+
+      <!-- AI Agents Card -->
+      <div class="card ai-agents-card" id="aiAgentsCard">
+        <div class="card-icon">
+          <img src="https://www.figma.com/api/mcp/asset/b7ed067b-aab1-4c0b-aebb-c1dc17608b9f" alt="Agent icon">
+        </div>
+        <h2 class="card-title">AI Agents</h2>
+        <div class="stats">
+          <div class="stat">
+            <span class="stat-number" id="jobsNum">0</span>
+            <span class="stat-label">Jobs</span>
+          </div>
+          <div class="stat">
+            <span class="stat-number" id="actionsNum">0</span>
+            <span class="stat-label">Actions</span>
+          </div>
+          <div class="stat">
+            <span class="stat-number" id="intentsNum">0</span>
+            <span class="stat-label">Intents</span>
+          </div>
+        </div>
+        <div class="ready-badge" id="readyBadge">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+          </svg>
+          Ready
+        </div>
+      </div>
+  </div>
+
+  <button class="reset-btn" id="resetBtn">Reset Demo</button>
+
+  <script>
+    const createAgentBtn = document.getElementById('createAgentBtn');
+    const aiAgentsCard = document.getElementById('aiAgentsCard');
+    const readyBadge = document.getElementById('readyBadge');
+    const jobsNum = document.getElementById('jobsNum');
+    const actionsNum = document.getElementById('actionsNum');
+    const intentsNum = document.getElementById('intentsNum');
+    const resetBtn = document.getElementById('resetBtn');
+
+    // Number animation with overshoot (springs past target, then settles)
+    function animateNumberWithOvershoot(element, target, duration, delay) {
+      setTimeout(() => {
+        const start = performance.now();
+        const overshoot = Math.ceil(target * 1.15); // 15% overshoot
+        const settleStart = duration * 0.7; // Start settling at 70%
+        
+        function update(currentTime) {
+          const elapsed = currentTime - start;
+          const progress = Math.min(elapsed / duration, 1);
+          
+          let current;
+          if (elapsed < settleStart) {
+            // Phase 1: Ease-out to overshoot
+            const phaseProgress = elapsed / settleStart;
+            const eased = 1 - Math.pow(1 - phaseProgress, 3);
+            current = Math.round(eased * overshoot);
+          } else {
+            // Phase 2: Settle back to target
+            const settleProgress = (elapsed - settleStart) / (duration - settleStart);
+            const eased = 1 - Math.pow(1 - settleProgress, 2);
+            current = Math.round(overshoot - (overshoot - target) * eased);
+          }
+          
+          element.textContent = Math.max(0, current);
+          
+          if (progress < 1) {
+            requestAnimationFrame(update);
+          } else {
+            element.textContent = target; // Ensure exact final value
+          }
+        }
+        
+        requestAnimationFrame(update);
+      }, delay);
+    }
+
+    function runAnimation() {
+      // Card appears with blur fade
+      setTimeout(() => {
+        aiAgentsCard.classList.add('visible');
+      }, 250);
+
+      // Numbers with overshoot animation (staggered)
+      animateNumberWithOvershoot(jobsNum, 4, 1000, 550);
+      animateNumberWithOvershoot(actionsNum, 8, 1000, 700);
+      animateNumberWithOvershoot(intentsNum, 13, 1000, 850);
+
+      // Ready badge with bounce
+      setTimeout(() => {
+        readyBadge.classList.add('visible');
+      }, 2000);
+    }
+
+    function resetAnimation() {
+      aiAgentsCard.classList.remove('visible');
+      readyBadge.classList.remove('visible');
+      jobsNum.textContent = '0';
+      actionsNum.textContent = '0';
+      intentsNum.textContent = '0';
+    }
+
+    createAgentBtn.addEventListener('click', runAnimation);
+    resetBtn.addEventListener('click', resetAnimation);
+  </script>
+</body>
+</html>

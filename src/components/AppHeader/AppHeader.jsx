@@ -8,18 +8,15 @@ export default function AppHeader({ activeTab, onTabChange, libraryName }) {
   return (
     <div className="flex items-center h-10 bg-background border-b border-border px-3 box-border">
       <div className="flex items-center gap-2 shrink-0">
-        <button className="bg-transparent border-none cursor-pointer p-1 rounded flex items-center justify-center text-muted-foreground hover:bg-secondary" aria-label="App Launcher">
+        <button className="relative bg-transparent border-none cursor-pointer p-1 rounded flex items-center justify-center text-muted-foreground hover:bg-secondary transition-[background-color,transform] active:scale-[0.96] before:absolute before:inset-[-5px] before:content-['']" aria-label="App Launcher">
           <LayoutGrid size={18} />
         </button>
         <span className="text-sm font-bold text-foreground font-sans whitespace-nowrap">
           Agentforce Studio
         </span>
       </div>
-      <TabsList className="ml-6 h-full">
-        <TabsTrigger value="dataLibraries">
-          Data Libraries
-        </TabsTrigger>
-        {showLibraryTab && (
+      {showLibraryTab && (
+        <TabsList className="ml-6 h-full">
           <TabsTrigger
             value={activeTab}
           >
@@ -27,8 +24,8 @@ export default function AppHeader({ activeTab, onTabChange, libraryName }) {
               ? libraryName
               : 'New Library'}
           </TabsTrigger>
-        )}
-      </TabsList>
+        </TabsList>
+      )}
     </div>
   )
 }
