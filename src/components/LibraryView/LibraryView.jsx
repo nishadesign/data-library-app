@@ -1,5 +1,18 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react'
-import { ChevronDown, Search, Plus, MoreHorizontal, ArrowUpDown, Trash2, X, ListFilter, Sparkles, RotateCcw } from 'lucide-react'
+import { ChevronDown, Search, Plus, MoreHorizontal, ArrowUpDown, Trash2, X, ListFilter, Sparkles, RotateCcw, Settings } from 'lucide-react'
+import {
+  DndContext,
+  PointerSensor,
+  KeyboardSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core'
+import {
+  SortableContext,
+  arrayMove,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable'
 import { Button } from '../ui/button'
 import { Badge } from '../ui/badge'
 import { Input } from '../ui/input'
@@ -22,6 +35,7 @@ import StatusCard from '../StatusCard/StatusCard'
 import AgentToolCard from '../AgentToolCard/AgentToolCard'
 import TestCard from '../TestCard/TestCard'
 import DeployCard from '../DeployCard/DeployCard'
+import SortableCard from './SortableCard'
 import { api } from '../../lib/api'
 import {
   createRecommendationsForFiles,
@@ -76,6 +90,25 @@ function getDemoFailedSteps() {
   ]
 }
 
+const DEFAULT_CARD_ORDER = ['files', 'status', 'agentTool', 'test', 'deploy']
+const ALLOWED_CARD_IDS = new Set(DEFAULT_CARD_ORDER)
+
+function sanitizeCardOrder(value) {
+  if (!Array.isArray(value)) return DEFAULT_CARD_ORDER
+  const seen = new Set()
+  const cleaned = []
+  for (const id of value) {
+    if (typeof id === 'string' && ALLOWED_CARD_IDS.has(id) && !seen.has(id)) {
+      seen.add(id)
+      cleaned.push(id)
+    }
+  }
+  for (const id of DEFAULT_CARD_ORDER) {
+    if (!seen.has(id)) cleaned.push(id)
+  }
+  return cleaned
+}
+
 function getStatusVariant(displayStatus) {
   if (displayStatus === 'Deployed') return 'success'
   if (displayStatus === 'Ready') return 'success'
@@ -105,9 +138,17 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
   const [recommendations, setRecommendations] = useState([])
   const [selectedFixFileId, setSelectedFixFileId] = useState(null)
   const [statusFilter, setStatusFilter] = useState('')
+  const [arrangeMode, setArrangeMode] = useState(false)
+  const [cardOrder, setCardOrder] = useState(() => sanitizeCardOrder(library?.cardOrder))
+  const arrangeSnapshotRef = useRef(null)
   const fileInputRef = useRef(null)
   const scrollRef = useRef(null)
   const pipelineCancelRef = useRef(null)
+
+  const dndSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  )
   const prevAgentToolReadyRef = useRef(false)
   const isDemoReady = Boolean(library?.isDemo && library?.demoState === 'ready')
   const isDemoFailed = Boolean(library?.isDemo && library?.demoState === 'failed')
@@ -207,6 +248,53 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
       }
     }
   }, [editing, metaCollapsed, pipelineOverall])
+
+  const startArrangeMode = useCallback(() => {
+    if (isReadOnlyDemo) return
+    arrangeSnapshotRef.current = cardOrder
+    setArrangeMode(true)
+  }, [cardOrder, isReadOnlyDemo])
+
+  const cancelArrangeMode = useCallback(() => {
+    if (arrangeSnapshotRef.current) {
+      setCardOrder(arrangeSnapshotRef.current)
+    }
+    arrangeSnapshotRef.current = null
+    setArrangeMode(false)
+  }, [])
+
+  const finishArrangeMode = useCallback(() => {
+    arrangeSnapshotRef.current = null
+    setArrangeMode(false)
+    persistLibraryPatch({ cardOrder })
+  }, [cardOrder, persistLibraryPatch])
+
+  const handleCardDragEnd = useCallback((event) => {
+    const { active, over } = event
+    if (!over || active.id === over.id) return
+    setCardOrder((prev) => {
+      const oldIndex = prev.indexOf(active.id)
+      const newIndex = prev.indexOf(over.id)
+      if (oldIndex < 0 || newIndex < 0) return prev
+      return arrayMove(prev, oldIndex, newIndex)
+    })
+  }, [])
+
+  useEffect(() => {
+    if (!arrangeMode) return
+    function handleKey(e) {
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        cancelArrangeMode()
+      }
+    }
+    window.addEventListener('keydown', handleKey)
+    return () => window.removeEventListener('keydown', handleKey)
+  }, [arrangeMode, cancelArrangeMode])
+
+  useEffect(() => {
+    setCardOrder(sanitizeCardOrder(library?.cardOrder))
+  }, [library?.id, library?.cardOrder])
 
   function startEditing() {
     if (isReadOnlyDemo) return
@@ -581,149 +669,7 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
     })
   }, [pipelineSteps, files.length])
 
-  return (
-    <div className="flex-1 h-full bg-background flex flex-col overflow-hidden">
-      {/* Sticky metadata card */}
-      <Card className={`px-6 shrink-0 rounded-none border-x-0 border-t-0 transition-[padding] duration-200 ease-[var(--ease-out-strong)] ${metaCollapsed ? 'py-3' : 'p-5'}`}>
-        {editing ? (
-          <>
-            <div className="flex flex-col gap-1.5 mb-4">
-              <Label htmlFor="editLibraryName">Library Name</Label>
-              <Input
-                id="editLibraryName"
-                value={editDraft.libraryName}
-                onChange={e => handleDraftChange('libraryName', e.target.value)}
-              />
-            </div>
-
-            <div className="flex gap-6 mb-4">
-              <div className="flex flex-col gap-1.5 flex-1">
-                <Label htmlFor="editApiName">API Name</Label>
-                <Input
-                  id="editApiName"
-                  value={editDraft.apiName}
-                  onChange={e => handleDraftChange('apiName', e.target.value)}
-                />
-              </div>
-              <div className="flex flex-col gap-1.5 flex-1">
-                <Label htmlFor="editDataSpace">Data Space</Label>
-                <div className="relative flex items-center">
-                  <Input
-                    id="editDataSpace"
-                    value={editDraft.dataSpace}
-                    readOnly
-                    className="pr-9 cursor-pointer"
-                  />
-                  {editDraft.dataSpace && (
-                    <button
-                      className="absolute right-2.5 bg-transparent border-none cursor-pointer p-0.5 flex items-center justify-center text-muted-foreground rounded-full hover:bg-secondary"
-                      onClick={() => handleDraftChange('dataSpace', '')}
-                      aria-label="Clear data space"
-                    >
-                      <X size={14} />
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="editDescription">Description</Label>
-              <Textarea
-                id="editDescription"
-                value={editDraft.description}
-                onChange={e => handleDraftChange('description', e.target.value)}
-                placeholder="This description will be used by agent to decide when to call this data library..."
-              />
-            </div>
-
-            <div className="mt-3 flex items-center gap-2.5 pt-3 -mx-6 px-6 border-t border-border opacity-60">
-              <Switch
-                id="useAIEdit"
-                checked={useAI}
-                disabled
-              />
-              <Label htmlFor="useAIEdit" className="text-sm text-foreground font-normal cursor-default inline-flex items-center gap-1.5">
-                Use Intelligent Context to process content, extract text, tables, images and structures from files.
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Sparkles size={14} className="text-primary shrink-0" />
-                  </TooltipTrigger>
-                  <TooltipContent className="bg-tooltip-ai">This feature uses LLM to process content</TooltipContent>
-                </Tooltip>
-              </Label>
-            </div>
-          </>
-        ) : (
-          <>
-            <div className={`flex items-center justify-between ${metaCollapsed ? '' : 'mb-4'}`}>
-              <div className="flex items-center gap-2.5">
-                <h1 className={`font-medium text-foreground m-0 font-sans transition-[font-size] duration-200 ease-[var(--ease-out-strong)] ${metaCollapsed ? 'text-base' : 'text-[22px]'}`}>{library.libraryName}</h1>
-                {metaCollapsed && displayStatus && (
-                  <Badge variant={getStatusVariant(displayStatus)}>
-                    {displayStatus}
-                  </Badge>
-                )}
-              </div>
-              {!isReadOnlyDemo && <Button variant="link" onClick={startEditing}>Edit</Button>}
-            </div>
-
-            {!metaCollapsed && (
-              <>
-                <div className="flex gap-12 mb-0">
-                  <div className="flex flex-col gap-0.5">
-                    <Label className="font-normal">API Name</Label>
-                    <span className="text-sm font-normal text-foreground font-sans">{library.apiName}</span>
-                  </div>
-                  <div className="flex flex-col gap-0.5">
-                    <Label className="font-normal">Data Space</Label>
-                    <span className="text-sm font-normal text-foreground font-sans">{library.dataSpace || 'Default'}</span>
-                  </div>
-                  <div className="flex flex-col gap-0.5">
-                    <Label className="font-normal">Data Type</Label>
-                    <span className="text-sm font-normal text-foreground font-sans">Files</span>
-                  </div>
-                  {displayStatus && (
-                    <div className="flex flex-col gap-0.5">
-                      <Label className="font-normal">Status</Label>
-                      <Badge variant={getStatusVariant(displayStatus)}>
-                        {displayStatus}
-                      </Badge>
-                    </div>
-                  )}
-                  <div className="flex flex-col gap-0.5">
-                    <Label className="font-normal">Content Processing</Label>
-                    <span className="text-sm font-normal text-foreground font-sans inline-flex items-center gap-1.5">
-                      Intelligent Context
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Sparkles size={14} className="text-primary shrink-0" />
-                        </TooltipTrigger>
-                        <TooltipContent className="bg-tooltip-ai">This feature uses LLM to process content</TooltipContent>
-                      </Tooltip>
-                    </span>
-                  </div>
-                </div>
-
-                {library.description && (
-                  <div className="mt-4">
-                    <Label className="font-normal mb-0.5">Description</Label>
-                    <p className="text-sm text-foreground font-sans leading-relaxed m-0">{library.description}</p>
-                  </div>
-                )}
-
-              </>
-            )}
-          </>
-        )}
-      </Card>
-
-      <div
-        ref={scrollRef}
-        onScroll={handleScroll}
-        className={`flex-1 overflow-y-auto min-h-0 bg-muted ${editing ? 'px-6 pb-6 pt-4' : 'p-6'}`}
-      >
-        {/* Files card */}
+  const filesCardNode = (
         <Collapsible open={filesOpen} onOpenChange={setFilesOpen}>
           <Card className="mb-6 overflow-hidden rounded-xl p-0">
             <div className="flex items-center py-4 px-6">
@@ -924,76 +870,285 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
             </CollapsibleContent>
           </Card>
         </Collapsible>
+  )
 
-        {/* Status card */}
-        <StatusCard key={statusCardKey} steps={enrichedSteps} defaultOpen={autoExpandStatusOnEnter || isDemoFailed} />
+  const statusCardNode = (
+    <StatusCard key={statusCardKey} steps={enrichedSteps} defaultOpen={autoExpandStatusOnEnter || isDemoFailed} />
+  )
 
-        {/* Agent Tool card */}
-        <AgentToolCard
-          libraryName={library.libraryName}
-          defaultOpen={false}
-          autoExpandSignal={agentToolAutoExpandSignal}
-          forceOpen={isDemoReady}
-          agentToolReady={agentToolReady}
-        />
+  const agentToolCardNode = (
+    <AgentToolCard
+      libraryName={library.libraryName}
+      defaultOpen={false}
+      autoExpandSignal={agentToolAutoExpandSignal}
+      forceOpen={isDemoReady}
+      agentToolReady={agentToolReady}
+    />
+  )
 
-        {/* Test card */}
-        <div>
-          <TestCard
-            disabled={pipelineOverall !== 'ready' && !isDemoReady}
-            disabledMessage="Test cases will be available once your data is indexed."
-            defaultOpen={isDemoReady}
-            forceOpen={false}
-            autoExpandSignal={testCardAutoExpandSignal}
-            testCases={testCases}
-            libraryFiles={files}
-            onTestCasesChange={handleTestCasesChange}
-            onFirstPass={handleFirstTestPass}
-            readOnly={isDemoFailed}
-          />
-        </div>
+  const testCardNode = (
+    <div>
+      <TestCard
+        disabled={pipelineOverall !== 'ready' && !isDemoReady}
+        disabledMessage="Test cases will be available once your data is indexed."
+        defaultOpen={isDemoReady}
+        forceOpen={false}
+        autoExpandSignal={testCardAutoExpandSignal}
+        testCases={testCases}
+        libraryFiles={files}
+        onTestCasesChange={handleTestCasesChange}
+        onFirstPass={handleFirstTestPass}
+        readOnly={isDemoFailed}
+      />
+    </div>
+  )
 
-        {/* Deploy card */}
-        <DeployCard
-          defaultOpen={false}
-          forceOpen={isDeployed}
-          autoExpandSignal={deployCardAutoExpandSignal}
-          libraryName={library.libraryName}
-          deployment={deployment}
-          ready={pipelineOverall === 'ready' || isDemoReady}
-          hasRunTests={hasRunTests}
-          readOnly={isDemoFailed}
-          onDeploy={handleDeploy}
-          onUndeploy={handleUndeploy}
-        />
+  const deployCardNode = (
+    <DeployCard
+      defaultOpen={false}
+      forceOpen={isDeployed}
+      autoExpandSignal={deployCardAutoExpandSignal}
+      libraryName={library.libraryName}
+      deployment={deployment}
+      ready={pipelineOverall === 'ready' || isDemoReady}
+      hasRunTests={hasRunTests}
+      readOnly={isDemoFailed}
+      onDeploy={handleDeploy}
+      onUndeploy={handleUndeploy}
+    />
+  )
+
+  const cardElements = {
+    files: filesCardNode,
+    status: statusCardNode,
+    agentTool: agentToolCardNode,
+    test: testCardNode,
+    deploy: deployCardNode,
+  }
+
+  return (
+    <div className="flex-1 h-full bg-background flex flex-col overflow-hidden">
+      {/* Sticky metadata card */}
+      <Card className={`px-6 shrink-0 rounded-none border-x-0 border-t-0 transition-[padding] duration-200 ease-[var(--ease-out-strong)] ${metaCollapsed ? 'py-3' : 'p-5'}`}>
+        {editing ? (
+          <>
+            <div className="flex flex-col gap-1.5 mb-4">
+              <Label htmlFor="editLibraryName">Library Name</Label>
+              <Input
+                id="editLibraryName"
+                value={editDraft.libraryName}
+                onChange={e => handleDraftChange('libraryName', e.target.value)}
+              />
+            </div>
+
+            <div className="flex gap-6 mb-4">
+              <div className="flex flex-col gap-1.5 flex-1">
+                <Label htmlFor="editApiName">API Name</Label>
+                <Input
+                  id="editApiName"
+                  value={editDraft.apiName}
+                  onChange={e => handleDraftChange('apiName', e.target.value)}
+                />
+              </div>
+              <div className="flex flex-col gap-1.5 flex-1">
+                <Label htmlFor="editDataSpace">Data Space</Label>
+                <div className="relative flex items-center">
+                  <Input
+                    id="editDataSpace"
+                    value={editDraft.dataSpace}
+                    readOnly
+                    className="pr-9 cursor-pointer"
+                  />
+                  {editDraft.dataSpace && (
+                    <button
+                      className="absolute right-2.5 bg-transparent border-none cursor-pointer p-0.5 flex items-center justify-center text-muted-foreground rounded-full hover:bg-secondary"
+                      onClick={() => handleDraftChange('dataSpace', '')}
+                      aria-label="Clear data space"
+                    >
+                      <X size={14} />
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="editDescription">Description</Label>
+              <Textarea
+                id="editDescription"
+                value={editDraft.description}
+                onChange={e => handleDraftChange('description', e.target.value)}
+                placeholder="This description will be used by agent to decide when to call this data library..."
+              />
+            </div>
+
+            <div className="mt-3 flex items-center gap-2.5 pt-3 -mx-6 px-6 border-t border-border opacity-60">
+              <Switch
+                id="useAIEdit"
+                checked={useAI}
+                disabled
+              />
+              <Label htmlFor="useAIEdit" className="text-sm text-foreground font-normal cursor-default inline-flex items-center gap-1.5">
+                Use Intelligent Context to process content, extract text, tables, images and structures from files.
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Sparkles size={14} className="text-primary shrink-0" />
+                  </TooltipTrigger>
+                  <TooltipContent className="bg-tooltip-ai">This feature uses LLM to process content</TooltipContent>
+                </Tooltip>
+              </Label>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className={`flex items-center justify-between ${metaCollapsed ? '' : 'mb-4'}`}>
+              <div className="flex items-center gap-2.5">
+                <h1 className={`font-medium text-foreground m-0 font-sans transition-[font-size] duration-200 ease-[var(--ease-out-strong)] ${metaCollapsed ? 'text-base' : 'text-[22px]'}`}>{library.libraryName}</h1>
+                {metaCollapsed && displayStatus && (
+                  <Badge variant={getStatusVariant(displayStatus)}>
+                    {displayStatus}
+                  </Badge>
+                )}
+              </div>
+              {!isReadOnlyDemo && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      aria-label="Library settings"
+                      className="h-8 w-auto px-2 gap-0.5"
+                    >
+                      <Settings size={16} />
+                      <ChevronDown size={12} />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onSelect={startEditing}>
+                      Edit Library Details
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={startArrangeMode}>
+                      Arrange Layout
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => {}}>
+                      New Version
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+            </div>
+
+            {!metaCollapsed && (
+              <>
+                <div className="flex gap-12 mb-0">
+                  <div className="flex flex-col gap-0.5">
+                    <Label className="font-normal">API Name</Label>
+                    <span className="text-sm font-normal text-foreground font-sans">{library.apiName}</span>
+                  </div>
+                  <div className="flex flex-col gap-0.5">
+                    <Label className="font-normal">Data Space</Label>
+                    <span className="text-sm font-normal text-foreground font-sans">{library.dataSpace || 'Default'}</span>
+                  </div>
+                  <div className="flex flex-col gap-0.5">
+                    <Label className="font-normal">Data Type</Label>
+                    <span className="text-sm font-normal text-foreground font-sans">Files</span>
+                  </div>
+                  {displayStatus && (
+                    <div className="flex flex-col gap-0.5">
+                      <Label className="font-normal">Status</Label>
+                      <Badge variant={getStatusVariant(displayStatus)}>
+                        {displayStatus}
+                      </Badge>
+                    </div>
+                  )}
+                  <div className="flex flex-col gap-0.5">
+                    <Label className="font-normal">Content Processing</Label>
+                    <span className="text-sm font-normal text-foreground font-sans inline-flex items-center gap-1.5">
+                      Intelligent Context
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Sparkles size={14} className="text-primary shrink-0" />
+                        </TooltipTrigger>
+                        <TooltipContent className="bg-tooltip-ai">This feature uses LLM to process content</TooltipContent>
+                      </Tooltip>
+                    </span>
+                  </div>
+                </div>
+
+                {library.description && (
+                  <div className="mt-4">
+                    <Label className="font-normal mb-0.5">Description</Label>
+                    <p className="text-sm text-foreground font-sans leading-relaxed m-0">{library.description}</p>
+                  </div>
+                )}
+
+              </>
+            )}
+          </>
+        )}
+      </Card>
+
+      <div
+        ref={scrollRef}
+        onScroll={handleScroll}
+        className={`flex-1 overflow-y-auto min-h-0 bg-muted ${editing ? 'px-6 pb-6 pt-4' : 'p-6'}`}
+      >
+        <DndContext sensors={dndSensors} onDragEnd={handleCardDragEnd}>
+          <SortableContext items={cardOrder} strategy={verticalListSortingStrategy}>
+            {cardOrder.map((cardId, index) => (
+              <SortableCard
+                key={cardId}
+                id={cardId}
+                arranging={arrangeMode}
+                jiggle={cardId !== 'files'}
+                delayIndex={index}
+              >
+                {cardElements[cardId]}
+              </SortableCard>
+            ))}
+          </SortableContext>
+        </DndContext>
       </div>
 
       {/* Footer */}
       <div className="flex justify-center gap-3 py-4 px-6 bg-background border-t border-border shrink-0">
-        <Button variant="ghost" className="h-auto px-0 text-foreground hover:bg-transparent" onClick={() => { if (editing) cancelEditing(); else onCancel?.(); }}>
-          Cancel
-        </Button>
-        {selectedFiles.size > 0 && (
-          <Button variant="destructive" onClick={handleRemoveFiles}>
-            <Trash2 size={14} />
-            Remove Files
-          </Button>
-        )}
-        {showAddFilesTooltip ? (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span className="inline-flex">
-                <Button variant="brand" onClick={handleSave} disabled>
-                  Save
-                </Button>
-              </span>
-            </TooltipTrigger>
-            <TooltipContent>Add files to enable save</TooltipContent>
-          </Tooltip>
+        {arrangeMode ? (
+          <>
+            <Button variant="ghost" className="h-auto px-0 text-foreground hover:bg-transparent" onClick={cancelArrangeMode}>
+              Cancel
+            </Button>
+            <Button variant="brand" onClick={finishArrangeMode}>
+              Done
+            </Button>
+          </>
         ) : (
-          <Button variant="brand" onClick={handleSave} disabled={saveDisabled}>
-            {saving ? 'Saving...' : 'Save'}
-          </Button>
+          <>
+            <Button variant="ghost" className="h-auto px-0 text-foreground hover:bg-transparent" onClick={() => { if (editing) cancelEditing(); else onCancel?.(); }}>
+              Cancel
+            </Button>
+            {selectedFiles.size > 0 && (
+              <Button variant="destructive" onClick={handleRemoveFiles}>
+                <Trash2 size={14} />
+                Remove Files
+              </Button>
+            )}
+            {showAddFilesTooltip ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="inline-flex">
+                    <Button variant="brand" onClick={handleSave} disabled>
+                      Save
+                    </Button>
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>Add files to enable save</TooltipContent>
+              </Tooltip>
+            ) : (
+              <Button variant="brand" onClick={handleSave} disabled={saveDisabled}>
+                {saving ? 'Saving...' : 'Save'}
+              </Button>
+            )}
+          </>
         )}
       </div>
 

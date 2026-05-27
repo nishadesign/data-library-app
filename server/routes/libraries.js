@@ -85,8 +85,51 @@ libraryRouter.post('/', (req, res) => {
   res.status(201).json(library)
 })
 
+const ALLOWED_CARD_IDS = ['files', 'status', 'agentTool', 'test', 'deploy']
+const ALLOWED_PUT_FIELDS = [
+  'libraryName',
+  'apiName',
+  'dataSpace',
+  'description',
+  'useAI',
+  'status',
+  'files',
+  'testCases',
+  'deployment',
+  'cardOrder',
+  'updatedAt',
+]
+
+function sanitizeCardOrder(value) {
+  if (!Array.isArray(value)) return undefined
+  if (value.length === 0) return undefined
+  const seen = new Set()
+  for (const id of value) {
+    if (typeof id !== 'string') return undefined
+    if (!ALLOWED_CARD_IDS.includes(id)) return undefined
+    if (seen.has(id)) return undefined
+    seen.add(id)
+  }
+  return value
+}
+
+function buildLibraryPatch(body) {
+  const patch = {}
+  for (const field of ALLOWED_PUT_FIELDS) {
+    if (!Object.prototype.hasOwnProperty.call(body, field)) continue
+    if (field === 'cardOrder') {
+      const sanitized = sanitizeCardOrder(body.cardOrder)
+      if (sanitized) patch.cardOrder = sanitized
+      continue
+    }
+    patch[field] = body[field]
+  }
+  return patch
+}
+
 libraryRouter.put('/:id', (req, res) => {
-  const updated = updateLibrary(req.params.id, req.body)
+  const patch = buildLibraryPatch(req.body || {})
+  const updated = updateLibrary(req.params.id, patch)
   if (!updated) return res.status(404).json({ error: 'Library not found' })
   res.json(updated)
 })

@@ -304,6 +304,39 @@ body {
   --sidebar-ring: #066AFE;
 }
 
+@keyframes arrange-jiggle {
+  0%   { transform: rotate(-0.6deg); }
+  50%  { transform: rotate(0.6deg); }
+  100% { transform: rotate(-0.6deg); }
+}
+
+.arrange-jiggle {
+  animation: arrange-jiggle 0.18s linear infinite;
+  transform-origin: center center;
+  will-change: transform;
+}
+
+.arrange-jiggle-delay-1 { animation-delay: -40ms; }
+.arrange-jiggle-delay-2 { animation-delay: -90ms; }
+.arrange-jiggle-delay-3 { animation-delay: -130ms; }
+.arrange-jiggle-delay-4 { animation-delay: -170ms; }
+
+[data-dragging="true"] .arrange-jiggle,
+[data-dragging="true"].arrange-jiggle {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .arrange-jiggle,
+  .arrange-jiggle-delay-1,
+  .arrange-jiggle-delay-2,
+  .arrange-jiggle-delay-3,
+  .arrange-jiggle-delay-4 {
+    animation: none;
+    box-shadow: inset 0 0 0 1px var(--muted-foreground);
+  }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
