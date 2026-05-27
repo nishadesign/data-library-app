@@ -75,6 +75,8 @@ libraryRouter.post('/', (req, res) => {
     useAI: useAI !== false,
     status: 'Draft',
     files: [],
+    testCases: [],
+    deployment: null,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   }

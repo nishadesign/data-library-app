@@ -20,6 +20,8 @@ import {
 } from '../ui/dropdown-menu'
 import StatusCard from '../StatusCard/StatusCard'
 import AgentToolCard from '../AgentToolCard/AgentToolCard'
+import TestCard from '../TestCard/TestCard'
+import DeployCard from '../DeployCard/DeployCard'
 import { api } from '../../lib/api'
 import {
   createRecommendationsForFiles,
@@ -75,6 +77,7 @@ function getDemoFailedSteps() {
 }
 
 function getStatusVariant(displayStatus) {
+  if (displayStatus === 'Deployed') return 'success'
   if (displayStatus === 'Ready') return 'success'
   if (displayStatus === 'Processing') return 'inProgress'
   if (displayStatus === 'Failed') return 'destructive'
@@ -95,6 +98,10 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
   const [editing, setEditing] = useState(false)
   const [editDraft, setEditDraft] = useState({})
   const [agentToolAutoExpandSignal, setAgentToolAutoExpandSignal] = useState(0)
+  const [testCardAutoExpandSignal, setTestCardAutoExpandSignal] = useState(0)
+  const [deployCardAutoExpandSignal, setDeployCardAutoExpandSignal] = useState(0)
+  const [testCases, setTestCases] = useState(() => library.testCases ?? [])
+  const [deployment, setDeployment] = useState(() => library.deployment ?? null)
   const [recommendations, setRecommendations] = useState([])
   const [selectedFixFileId, setSelectedFixFileId] = useState(null)
   const [statusFilter, setStatusFilter] = useState('')
@@ -238,6 +245,8 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
     setRawNewFiles([])
     setSelectedFiles(new Set())
     setSaving(false)
+    setTestCases(library?.testCases ?? [])
+    setDeployment(library?.deployment ?? null)
   }, [library?.id])
 
   useEffect(() => {
@@ -456,13 +465,20 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
     return file.status || 'Uploaded'
   }
 
-  const displayStatus = pipelineOverall === 'ready' ? 'Ready'
+  const isDeployed = !!deployment
+  const hasRunTests = testCases.some(tc => tc.lastResult)
+
+  const rawStatus = isDeployed ? 'Deployed'
+    : pipelineOverall === 'ready' ? 'Ready'
     : pipelineOverall === 'inProgress' ? 'Processing'
     : pipelineOverall === 'failed' ? 'Failed'
-    : (library.status || 'Draft')
+    : library.status
+  const displayStatus = (rawStatus === 'Draft' || !rawStatus) ? null
+    : rawStatus === 'In Progress' ? 'Processing'
+    : rawStatus
   const hasUnsavedNewFiles = newFiles.some(file => file.status === '')
-  const saveDisabled = isReadOnlyDemo || saving || !hasUnsavedNewFiles || selectedFiles.size > 0
-  const showAddFilesTooltip = !isReadOnlyDemo && !saving && selectedFiles.size === 0 && !hasUnsavedNewFiles
+  const saveDisabled = isReadOnlyDemo || saving || !hasUnsavedNewFiles || selectedFiles.size > 0 || isDeployed
+  const showAddFilesTooltip = !isReadOnlyDemo && !isDeployed && !saving && selectedFiles.size === 0 && !hasUnsavedNewFiles
 
   const agentToolReady = pipelineSteps.some(
     s => s.name === 'Building agent tool' && s.status === 'ready'
@@ -471,9 +487,34 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
   useEffect(() => {
     if (!prevAgentToolReadyRef.current && agentToolReady) {
       setAgentToolAutoExpandSignal(s => s + 1)
+      setTestCardAutoExpandSignal(s => s + 1)
     }
     prevAgentToolReadyRef.current = agentToolReady
   }, [agentToolReady])
+
+  const handleTestCasesChange = useCallback((next) => {
+    setTestCases(next)
+    persistLibraryPatch({ testCases: next })
+  }, [persistLibraryPatch])
+
+  const handleFirstTestPass = useCallback(() => {
+    setDeployCardAutoExpandSignal(s => s + 1)
+  }, [])
+
+  const handleDeploy = useCallback(async (agent) => {
+    const nextDeployment = {
+      deployedTo: { agentId: agent.agentId, agentName: agent.agentName },
+      deployedAt: new Date().toISOString(),
+      deployedBy: 'Current User',
+    }
+    setDeployment(nextDeployment)
+    await persistLibraryPatch({ deployment: nextDeployment, status: 'Deployed' })
+  }, [persistLibraryPatch])
+
+  const handleUndeploy = useCallback(async () => {
+    setDeployment(null)
+    await persistLibraryPatch({ deployment: null, status: 'Ready' })
+  }, [persistLibraryPatch])
 
   const enrichedSteps = useMemo(() => {
     const fileCount = files.length
@@ -506,7 +547,7 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
   return (
     <div className="flex-1 h-full bg-background flex flex-col overflow-hidden">
       {/* Sticky metadata card */}
-      <Card className={`px-6 shrink-0 rounded-none border-x-0 border-t-0 transition-all duration-200 ${metaCollapsed ? 'py-3' : 'p-5'}`}>
+      <Card className={`px-6 shrink-0 rounded-none border-x-0 border-t-0 transition-[padding] duration-200 ease-[var(--ease-out-strong)] ${metaCollapsed ? 'py-3' : 'p-5'}`}>
         {editing ? (
           <>
             <div className="flex flex-col gap-1.5 mb-4">
@@ -580,8 +621,8 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
           <>
             <div className={`flex items-center justify-between ${metaCollapsed ? '' : 'mb-4'}`}>
               <div className="flex items-center gap-2.5">
-                <h1 className={`font-medium text-foreground m-0 font-sans transition-all duration-200 ${metaCollapsed ? 'text-base' : 'text-[22px]'}`}>{library.libraryName}</h1>
-                {metaCollapsed && (
+                <h1 className={`font-medium text-foreground m-0 font-sans transition-[font-size] duration-200 ease-[var(--ease-out-strong)] ${metaCollapsed ? 'text-base' : 'text-[22px]'}`}>{library.libraryName}</h1>
+                {metaCollapsed && displayStatus && (
                   <Badge variant={getStatusVariant(displayStatus)}>
                     {displayStatus}
                   </Badge>
@@ -605,12 +646,14 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
                     <Label className="font-normal">Data Type</Label>
                     <span className="text-sm font-normal text-foreground font-sans">Files</span>
                   </div>
-                  <div className="flex flex-col gap-0.5">
-                    <Label className="font-normal">Status</Label>
-                    <Badge variant={getStatusVariant(displayStatus)}>
-                      {displayStatus}
-                    </Badge>
-                  </div>
+                  {displayStatus && (
+                    <div className="flex flex-col gap-0.5">
+                      <Label className="font-normal">Status</Label>
+                      <Badge variant={getStatusVariant(displayStatus)}>
+                        {displayStatus}
+                      </Badge>
+                    </div>
+                  )}
                   <div className="flex flex-col gap-0.5">
                     <Label className="font-normal">Content Processing</Label>
                     <span className="text-sm font-normal text-foreground font-sans inline-flex items-center gap-1.5">
@@ -664,6 +707,7 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
                   <ChevronDown size={12} />
                 </span>
                 <span className="text-[15px] font-bold text-foreground">Files</span>
+                <span className="text-sm text-muted-foreground font-normal ml-1">· You can add up to 1000 files per library</span>
               </CollapsibleTrigger>
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-2 border border-input rounded-full px-3 py-[5px] bg-background w-40 focus-within:border-ring focus-within:ring-1 focus-within:ring-ring">
@@ -723,7 +767,7 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
             <CollapsibleContent>
               <div className="px-6 pb-5">
                 <div className="border border-border rounded-lg overflow-hidden">
-                <Table>
+                <Table className="table-fixed">
                   <TableHeader>
                     <TableRow>
                       <TableHead className="w-9 text-center">
@@ -737,16 +781,16 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
                       <TableHead>
                         <span className="flex items-center gap-1">File Name <ArrowUpDown size={10} className="text-muted-foreground" /></span>
                       </TableHead>
-                      <TableHead>
+                      <TableHead className="w-24">
                         <span className="flex items-center gap-1">Size <ArrowUpDown size={10} className="text-muted-foreground" /></span>
                       </TableHead>
-                      <TableHead>
+                      <TableHead className="w-32">
                         <span className="flex items-center gap-1">Status <ArrowUpDown size={10} className="text-muted-foreground" /></span>
                       </TableHead>
-                      <TableHead>
+                      <TableHead className="w-40">
                         <span className="flex items-center gap-1">Uploaded By <ArrowUpDown size={10} className="text-muted-foreground" /></span>
                       </TableHead>
-                      <TableHead>
+                      <TableHead className="w-32">
                         <span className="flex items-center gap-1">Uploaded On <ArrowUpDown size={10} className="text-muted-foreground" /></span>
                       </TableHead>
                       <TableHead className="w-9 text-center" />
@@ -855,6 +899,36 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
             </CollapsibleContent>
           </Card>
         </Collapsible>
+
+        {/* Test card */}
+        <div className="mt-4">
+          <TestCard
+            disabled={pipelineOverall !== 'ready' && !isDemoReady}
+            disabledMessage="Test cases will be available once your data is indexed."
+            defaultOpen={isDemoReady}
+            forceOpen={false}
+            autoExpandSignal={testCardAutoExpandSignal}
+            testCases={testCases}
+            libraryFiles={files}
+            onTestCasesChange={handleTestCasesChange}
+            onFirstPass={handleFirstTestPass}
+            readOnly={isDemoFailed}
+          />
+        </div>
+
+        {/* Deploy card */}
+        <DeployCard
+          defaultOpen={false}
+          forceOpen={isDeployed}
+          autoExpandSignal={deployCardAutoExpandSignal}
+          libraryName={library.libraryName}
+          deployment={deployment}
+          ready={pipelineOverall === 'ready' || isDemoReady}
+          hasRunTests={hasRunTests}
+          readOnly={isDemoFailed}
+          onDeploy={handleDeploy}
+          onUndeploy={handleUndeploy}
+        />
       </div>
 
       {/* Footer */}

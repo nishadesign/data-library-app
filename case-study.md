@@ -287,6 +287,68 @@ This is a small but considered interaction. The Agent Tool card auto-expands at 
 
 ---
 
+### Slide 13b — Test stage: batch evaluation as a first-class surface
+
+**Title:** Making the retriever testable, not just runnable
+
+**Content:**
+Once the pipeline reaches Ready, the Test card auto-expands. It is a batch test-set surface, not a one-off chat:
+
+| Column | What it captures |
+|--------|-----------------|
+| Question | The query the retriever should answer |
+| Expected sources | File names that should appear in the top-K results |
+| Tags | Free-text grouping (e.g. `policy`, `edge-case`) |
+| Result | Pass / Fail / Not run / Running… (Badge) |
+| Last run | Timestamp |
+
+Two interaction layers in one card:
+
+1. **Aggregate**: a `Run all` button executes every row sequentially with staggered timing (600–1200ms per case). The summary "X / Y passed · N failed · M not run" updates as rows resolve.
+2. **Per-row**: clicking a row expands an inline detail panel (not a modal — staying in the table preserves context). The panel shows: expected vs. retrieved sources as a red/green diff (reusing the AI Fixes treatment), top-3 retrieved chunks with confidence scores, the grounded answer string, and an itemized "Why this failed" list when applicable.
+
+**Design decisions:**
+- **Inline expansion over modal** — test inspection is a comparative task. Users want to scan the table and dive into one case without losing position.
+- **Pass/fail with reasons, not just a verdict** — every failure lists *why* (e.g. "Expected source refund_policy.pdf not found in top results"). A red badge without explanation is the same dead-end as a disabled button without a tooltip.
+- **Staggered run timing** — the same pattern used for per-file indexing. Watching rows resolve one by one transforms an abstract evaluation into a tangible per-question moment.
+- **Auto-expand handoff** — the same counter-not-boolean pattern that opens the Agent Tool card on step 4 also opens the Test card when the pipeline reaches Ready, then opens the Deploy card when the first test passes. The UI walks the user through the lifecycle.
+
+**Visual:** Annotated screenshot of the Test card with 3 passing rows, 1 failing row expanded into the detail panel showing the red/green source diff and confidence-scored chunks.
+
+**Speaker notes:**
+The Test stage is where this case study leans hardest into a principle I care about: trust through visible reasoning. AI builders don't just want to know that a query "worked" — they want to know which file the retriever pulled from, with what score, and whether their reference answer was in the response. So the Test card is built around evaluation as data — a table of named test cases with explicit expectations, not a freeform chat. Run all triggers a staggered sequential run, exactly like the file indexing pattern, so the user watches each row resolve. Clicking any row drops down an inline detail panel with a diff-style red/green view of what was expected versus what came back, the top three chunks with confidence scores, and a grounded answer. When a row fails, the "Why this failed" block lists every reason explicitly — missing source, missing keyword. This is the same design philosophy as the disabled-button tooltip rule: never let the system be silent about why something didn't work.
+
+---
+
+### Slide 13c — Deploy stage: attach to an agent
+
+**Title:** A deliberate handoff from "ready" to "in production"
+
+**Content:**
+Deploy is gated, not free. The card has three distinct states:
+
+| State | Trigger | UI |
+|-------|---------|----|
+| Disabled | Pipeline not Ready, OR no test has been run | Muted explainer text + tooltip on the disabled button stating *why* |
+| Ready to deploy | Pipeline Ready + ≥1 test run | "Deploy to agent →" primary button |
+| Deployed | Confirmation completed | Success badge inline with the card title, attached-to summary, "Open agent" link, "Undeploy" destructive button |
+
+The deploy modal lists three hardcoded agents with descriptions. Single-select via custom radio styling (no new primitive — we reused the Checkbox visual treatment). On confirm: optimistic update flips `library.status` to `Deployed`, fills in `deployment.deployedTo`, and persists via the same triple-fallback API path as everything else.
+
+Auto-expand: the Deploy card opens on the first test pass. This wires a quiet narrative — *the moment your retriever proves it works, the next step is offered up*.
+
+**Design decisions:**
+- **Gating with explanation, not gating with silence** — every disabled state has a tooltip ("Run your test cases at least once before deploying"). Same rule as Save.
+- **Undeploy is destructive but reversible** — confirm modal, status reverts to Ready, deployment cleared. Mirrors the diff-style file-removal footer behavior in the Files card.
+- **No "promote to production"** — the real product attaches a retriever to an agent. The case-study UI mirrors that primitive instead of inventing environment slots that don't exist.
+
+**Visual:** Three-state storyboard of the Deploy card: (1) Disabled with tooltip on the button, (2) Ready with the modal showing three agents and one selected, (3) Deployed showing the attached-to summary card with the agent name, date, and Undeploy button.
+
+**Speaker notes:**
+Deploy is where the lifecycle ends in this prototype. I wanted the stage to feel like a deliberate commitment, not a careless one. So the card is gated: you cannot deploy until the pipeline is Ready *and* you've run your test set at least once. Both of those gates are explained — the disabled button shows the reason on hover. When you can deploy, the modal lists three agents with one-line descriptions of what each does, and you pick one. After confirmation, the card switches to a deployed state with the attached-to summary, an Open agent link, and an Undeploy button. The Undeploy flow is intentionally destructive-styled and modal-confirmed, because attaching and detaching agents is an action with downstream consequences. The whole stage took only a few hundred lines, but the design rules — gating with explanation, optimistic update with fallback, auto-expand at the moment of relevance — are the same rules that shaped the rest of the system.
+
+---
+
 ### Slide 14 — Graceful degradation
 
 **Title:** When real-time fails, the experience doesn't

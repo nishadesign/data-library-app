@@ -31,6 +31,75 @@ const SAMPLE_LIBRARIES = [
         status: 'Indexed',
       },
     ],
+    testCases: [
+      {
+        id: 'demo-ready-test-1',
+        question: 'What are the most common reasons tickets get escalated?',
+        expectedSources: ['escalation_reasons.csv'],
+        expectedAnswer: 'billing disputes and shipping delays',
+        tags: ['escalations', 'top-question'],
+        lastResult: {
+          runAt: '2026-03-01T09:25:00.000Z',
+          status: 'pass',
+          retrievedChunks: [
+            { fileName: 'escalation_reasons.csv', snippet: 'Top escalation drivers in Q1: billing disputes (38%), shipping delays (24%), unresolved returns (16%).', score: 0.94 },
+            { fileName: 'support_tickets_q1.csv', snippet: 'Ticket #4421 escalated due to billing dispute on auto-renewal charge.', score: 0.81 },
+          ],
+          groundedAnswer: 'Based on escalation_reasons.csv: the top drivers are billing disputes (38%) and shipping delays (24%).',
+          failureReasons: [],
+        },
+      },
+      {
+        id: 'demo-ready-test-2',
+        question: 'How many tickets were resolved in Q1?',
+        expectedSources: ['support_tickets_q1.csv'],
+        expectedAnswer: '1,284 resolved',
+        tags: ['volume', 'q1'],
+        lastResult: {
+          runAt: '2026-03-01T09:25:00.000Z',
+          status: 'pass',
+          retrievedChunks: [
+            { fileName: 'support_tickets_q1.csv', snippet: 'Q1 totals: 1,612 opened, 1,284 resolved, 328 carried over.', score: 0.97 },
+          ],
+          groundedAnswer: 'Based on support_tickets_q1.csv: 1,284 tickets were resolved in Q1.',
+          failureReasons: [],
+        },
+      },
+      {
+        id: 'demo-ready-test-3',
+        question: 'Which agents had the highest escalation rate?',
+        expectedSources: ['support_tickets_q1.csv', 'escalation_reasons.csv'],
+        expectedAnswer: '',
+        tags: ['agent-performance'],
+        lastResult: {
+          runAt: '2026-03-01T09:25:00.000Z',
+          status: 'pass',
+          retrievedChunks: [
+            { fileName: 'support_tickets_q1.csv', snippet: 'Agents with >15% escalation rate: J. Park (18%), M. Liu (17%).', score: 0.88 },
+            { fileName: 'escalation_reasons.csv', snippet: 'Cross-referenced by agent: J. Park most often cited billing complexity.', score: 0.79 },
+          ],
+          groundedAnswer: 'Based on support_tickets_q1.csv and escalation_reasons.csv: J. Park (18%) and M. Liu (17%) had the highest escalation rates.',
+          failureReasons: [],
+        },
+      },
+      {
+        id: 'demo-ready-test-4',
+        question: 'What is the SLA for refund approvals?',
+        expectedSources: ['refund_policy.pdf'],
+        expectedAnswer: '5 business days',
+        tags: ['edge-case', 'policy'],
+        lastResult: {
+          runAt: '2026-03-01T09:25:00.000Z',
+          status: 'fail',
+          retrievedChunks: [
+            { fileName: 'support_tickets_q1.csv', snippet: 'Several refund requests aged past 7 days awaiting approval.', score: 0.62 },
+          ],
+          groundedAnswer: 'Based on support_tickets_q1.csv: refund requests show variable approval timing.',
+          failureReasons: ['Expected source refund_policy.pdf not found in this library', 'Reference answer "5 business days" not present in grounded response'],
+        },
+      },
+    ],
+    deployment: null,
   },
   {
     id: 'demo-failed-library',
@@ -53,6 +122,8 @@ const SAMPLE_LIBRARIES = [
         status: 'Uploaded',
       },
     ],
+    testCases: [],
+    deployment: null,
   },
 ]
 
@@ -119,6 +190,8 @@ function createFallbackLibrary(data) {
     createdAt: timestamp,
     agents: '',
     files: [],
+    testCases: [],
+    deployment: null,
   }
   return saveFallbackLibrary(library)
 }
