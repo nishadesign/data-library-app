@@ -16,14 +16,14 @@ function StepDot({ status }) {
   const isError = status === 'error'
 
   return (
-    <div className={`w-5 h-5 rounded-full shrink-0 flex items-center justify-center relative z-[1] transition-[background-color,border-color,box-shadow,transform,opacity] duration-250 ease-[cubic-bezier(0.22,1,0.36,1)] ${dotStyles[status] || dotStyles.default}`}>
-      <span className={`absolute inset-0 rounded-full bg-success/30 animate-pulse-ring transition-opacity duration-250 ease-[cubic-bezier(0.22,1,0.36,1)] ${isInProgress ? 'opacity-100' : 'opacity-0'}`} />
-      <span className={`absolute inset-0 flex items-center justify-center transition-[opacity,transform] duration-250 ease-[cubic-bezier(0.22,1,0.36,1)] ${isInProgress ? 'opacity-100 scale-100' : 'opacity-0 scale-90'}`}>
-        <span className="w-2.5 h-2.5 rounded-full bg-success" />
+    <div className={`w-4 h-4 rounded-full shrink-0 flex items-center justify-center relative z-[1] transition-[background-color,transform,opacity] duration-[250ms] ease-[var(--ease-out-strong)] ${dotStyles[status] || dotStyles.default}`}>
+      <span className={`absolute inset-0 rounded-full bg-success/30 animate-pulse-ring transition-opacity duration-[250ms] ease-[var(--ease-out-strong)] ${isInProgress ? 'opacity-100' : 'opacity-0'}`} />
+      <span className={`absolute inset-0 flex items-center justify-center transition-[opacity,transform] duration-[330ms] ease-[var(--ease-out-strong)] ${isInProgress ? 'opacity-100 scale-100' : 'opacity-0 scale-90'}`}>
+        <span className="w-2 h-2 rounded-full bg-success" />
       </span>
-      <Check className={`text-white transition-[opacity,transform] duration-250 ease-[cubic-bezier(0.22,1,0.36,1)] ${isReady ? 'opacity-100 scale-100' : 'opacity-0 scale-90'}`} size={12} strokeWidth={3} />
-      <span className={`absolute inset-0 flex items-center justify-center transition-[opacity,transform] duration-250 ease-[cubic-bezier(0.22,1,0.36,1)] ${isError ? 'opacity-100 scale-100' : 'opacity-0 scale-90'}`}>
-        <ErrorIcon className="text-destructive" size={20} />
+      <Check className={`text-white transition-[opacity,transform] duration-[370ms] ease-[var(--ease-overshoot)] ${isReady ? 'opacity-100 scale-100' : 'opacity-0 scale-[0.4]'}`} size={10} strokeWidth={3} />
+      <span className={`absolute inset-0 flex items-center justify-center transition-[opacity,transform] duration-[250ms] ease-[var(--ease-out-strong)] ${isError ? 'opacity-100 scale-100' : 'opacity-0 scale-90'}`}>
+        <ErrorIcon className="text-destructive" size={16} />
       </span>
     </div>
   )
@@ -36,7 +36,8 @@ function StepConnector({ status }) {
   return (
     <div className={`w-0.5 flex-1 relative overflow-hidden ${connectorSpacing}`}>
       <div className="absolute inset-0 bg-[repeating-linear-gradient(to_bottom,var(--input)_0px,var(--input)_3px,transparent_3px,transparent_7px)]" />
-      <div className={`absolute inset-0 origin-top bg-success rounded-sm will-change-transform transition-[opacity,transform] duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] delay-75 ${isReady ? 'opacity-100 scale-y-100' : 'opacity-0 scale-y-0'}`} />
+      <div className={`absolute inset-0 origin-top bg-success rounded-sm will-change-transform transition-[opacity,transform] duration-[280ms] ease-[var(--ease-out-strong)] ${isReady ? 'opacity-100 scale-y-100' : 'opacity-0 scale-y-0'}`} />
+
     </div>
   )
 }
@@ -93,17 +94,17 @@ export default function StatusCard({ steps, defaultOpen = false }) {
             <div className="flex flex-col pl-1">
               {steps.map((step, i) => (
                 <div className="flex gap-3 relative min-h-12" key={i}>
-                  <div className="flex flex-col items-center w-5 shrink-0 relative">
+                  <div className="flex flex-col items-center w-4 shrink-0 relative">
                     <StepDot status={step.status} />
                     {i < steps.length - 1 && <StepConnector status={step.status} />}
                   </div>
-                  <div className={`flex flex-col gap-0.5 min-w-0 flex-1 ${i === steps.length - 1 ? 'pb-0' : 'pb-4'}`}>
+                  <div className={`flex flex-col gap-0 min-w-0 flex-1 ${i === steps.length - 1 ? 'pb-0' : 'pb-4'}`}>
                     <span className={`text-sm font-normal font-sans leading-5 truncate transition-colors duration-250 ease-[cubic-bezier(0.22,1,0.36,1)] ${step.status === 'error' ? 'text-destructive' : 'text-foreground'}`}>
                       {step.name}
                     </span>
-                    <div className="min-h-4 flex items-center min-w-0">
+                    <div className="h-5 flex items-center min-w-0">
                       {step.status === 'inProgress' && step.description && (
-                        <span className="text-sm font-sans leading-snug truncate text-transparent bg-clip-text bg-[length:200%_100%] bg-[linear-gradient(90deg,var(--muted-foreground)_35%,var(--input)_48%,var(--border)_50%,var(--input)_52%,var(--muted-foreground)_65%)] animate-shimmer">
+                        <span className="text-sm text-muted-foreground font-sans leading-snug truncate">
                           {step.description}
                         </span>
                       )}

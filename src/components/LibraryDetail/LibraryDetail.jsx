@@ -211,7 +211,7 @@ export default function LibraryDetail({ onCancel, onSave }) {
         {/* Files Section */}
         <Collapsible open={filesOpen} onOpenChange={setFilesOpen}>
           <Card className="mb-4 p-0">
-            <div className="flex items-center py-4 px-6">
+            <div className="flex items-center py-4 px-6 min-h-[68px]">
               <CollapsibleTrigger className="flex items-center gap-2 cursor-pointer select-none bg-transparent border-none p-0 flex-1 text-left font-sans hover:opacity-85">
                 <span className={`flex items-center transition-transform duration-200 ${filesOpen ? 'rotate-0' : '-rotate-90'}`}>
                   <ChevronDown size={12} />

@@ -5,9 +5,9 @@
 @custom-variant dark (&:is(.dark *));
 
 @keyframes pulse-ring {
-  0% { box-shadow: 0 0 0 0 rgba(6, 165, 154, 0.35); }
-  70% { box-shadow: 0 0 0 6px rgba(6, 165, 154, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(6, 165, 154, 0); }
+  0% { box-shadow: 0 0 0 0 color-mix(in oklch, var(--success) 30%, transparent); }
+  70% { box-shadow: 0 0 0 4px color-mix(in oklch, var(--success) 0%, transparent); }
+  100% { box-shadow: 0 0 0 0 color-mix(in oklch, var(--success) 0%, transparent); }
 }
 
 @keyframes shimmer-sweep {
@@ -98,7 +98,10 @@
   --animate-in: enter 0.15s ease-out;
   --animate-out: exit 0.1s ease-in;
   --animate-shimmer: shimmer-sweep 3.5s ease-in-out infinite;
-  --animate-pulse-ring: pulse-ring 2s ease-out infinite;
+  --animate-pulse-ring: pulse-ring 2.4s ease-out infinite;
+  --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-overshoot: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-in-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);

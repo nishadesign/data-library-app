@@ -28,7 +28,8 @@ import DataSourceCard from '../DataSourceCard/DataSourceCard'
 import { api } from '../../lib/api'
 
 function StatusIndicator({ status }) {
-  const label = status === 'In Progress' ? 'Processing' : (status || 'Draft')
+  if (!status || status === 'Draft') return null
+  const label = status === 'In Progress' ? 'Processing' : status
   const variant = label === 'Ready' ? 'success'
     : label === 'Processing' ? 'inProgress'
     : label === 'Failed' ? 'destructive'

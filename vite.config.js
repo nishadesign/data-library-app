@@ -15,6 +15,7 @@ export default defineConfig({
       input: {
         main: path.resolve(__dirname, 'index.html'),
         agentBuilder: path.resolve(__dirname, 'agent-builder.html'),
+        statusLab: path.resolve(__dirname, 'status-lab.html'),
       },
     },
   },
