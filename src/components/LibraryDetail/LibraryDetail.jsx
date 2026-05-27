@@ -127,7 +127,7 @@ export default function LibraryDetail({ onCancel, onSave }) {
   const saveDisabled = saving || !hasUnsavedPendingFiles
 
   return (
-    <div className="flex-1 h-full bg-muted flex flex-col overflow-hidden">
+    <div className="flex-1 h-full bg-background flex flex-col overflow-hidden">
       {/* Sticky metadata card */}
       <Card className="px-6 shrink-0 rounded-none border-x-0 border-t-0 p-5 pb-0">
         <div className="flex flex-col gap-1.5 w-full mb-4">
@@ -210,7 +210,7 @@ export default function LibraryDetail({ onCancel, onSave }) {
 
         {/* Files Section */}
         <Collapsible open={filesOpen} onOpenChange={setFilesOpen}>
-          <Card className="mb-4 p-0">
+          <Card className="mb-6 p-0">
             <div className="flex items-center py-4 px-6 min-h-[68px]">
               <CollapsibleTrigger className="flex items-center gap-2 cursor-pointer select-none bg-transparent border-none p-0 flex-1 text-left font-sans hover:opacity-85">
                 <span className={`flex items-center transition-transform duration-200 ${filesOpen ? 'rotate-0' : '-rotate-90'}`}>

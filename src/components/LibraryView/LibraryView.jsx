@@ -684,7 +684,7 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
       <div
         ref={scrollRef}
         onScroll={handleScroll}
-        className={`flex-1 overflow-y-auto min-h-0 bg-muted ${editing ? 'px-6 pb-6 pt-4' : 'p-6'}`}
+        className={`flex-1 overflow-y-auto min-h-0 bg-background ${editing ? 'px-6 pb-6 pt-4' : 'p-6'}`}
       >
         {/* Agent Tool card */}
         <AgentToolCard

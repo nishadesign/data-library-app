@@ -15,10 +15,10 @@ function buildDemoLibraries() {
   return [
     {
       id: DEMO_READY_ID,
-      libraryName: 'Sample Library 1',
-      apiName: 'sample_library_1',
+      libraryName: 'Support Ticket Cleanup Demo',
+      apiName: 'Support_Ticket_Cleanup_Demo',
       dataSpace: 'Default',
-      description: 'Sample ready-state library to demonstrate a fully successful indexing flow.',
+      description: 'Example support data with formatting, duplicate, and categorization issues already remediated.',
       useAI: true,
       status: 'Ready',
       isDemo: true,
@@ -101,10 +101,10 @@ function buildDemoLibraries() {
     },
     {
       id: DEMO_FAILED_ID,
-      libraryName: 'Sample Library 2',
-      apiName: 'sample_library_2',
+      libraryName: 'Revenue Ops Review Demo',
+      apiName: 'Revenue_Ops_Review_Demo',
       dataSpace: 'Default',
-      description: 'Sample failed-state library to demonstrate troubleshooting when indexing fails.',
+      description: 'Example revenue operations dataset showing a library that still needs data quality review.',
       useAI: true,
       status: 'Failed',
       isDemo: true,

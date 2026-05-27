@@ -77,7 +77,7 @@ export default function StatusCard({ steps, defaultOpen = false }) {
 
   return (
     <Collapsible open={open} onOpenChange={setOpen}>
-      <Card className="mb-4 overflow-hidden rounded-xl p-0">
+      <Card className="mb-6 overflow-hidden rounded-xl p-0">
         <CollapsibleTrigger className="flex items-center gap-2 py-4 px-6 cursor-pointer bg-transparent border-none w-full text-left font-sans hover:opacity-85">
           <span className={`flex items-center transition-transform duration-200 ${open ? 'rotate-0' : '-rotate-90'}`}>
             <ChevronDown size={12} />
