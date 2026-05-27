@@ -216,7 +216,7 @@ function StepDot({ status, config, runId }) {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          color: '#fff',
+          color: 'var(--primary-foreground)',
           opacity: isReady ? 1 : 0,
           transform: isReady ? 'scale(1)' : `scale(${config.checkStartScale})`,
           transition: `opacity ${config.checkDuration}ms ${easeCheck}, transform ${config.checkDuration}ms ${easeCheck}`,

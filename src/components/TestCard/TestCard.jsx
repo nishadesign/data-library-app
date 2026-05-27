@@ -160,7 +160,7 @@ export default function TestCard({
   return (
     <>
       <Collapsible open={open} onOpenChange={setOpen}>
-        <Card className="mb-4 overflow-hidden rounded-xl p-0">
+        <Card className="mb-6 overflow-hidden rounded-xl p-0">
           <div className="flex items-center py-4 px-6">
             <CollapsibleTrigger className="flex items-center gap-2 flex-1 cursor-pointer bg-transparent border-none p-0 font-sans hover:opacity-85">
               <span className={`flex items-center transition-transform duration-200 ${open ? 'rotate-0' : '-rotate-90'}`}>

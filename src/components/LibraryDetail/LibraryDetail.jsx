@@ -12,6 +12,8 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '.
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '../ui/collapsible'
 import StatusCard from '../StatusCard/StatusCard'
 import AgentToolCard from '../AgentToolCard/AgentToolCard'
+import TestCard from '../TestCard/TestCard'
+import DeployCard from '../DeployCard/DeployCard'
 import { api } from '../../lib/api'
 
 const DEFAULT_STEPS = [
@@ -205,12 +207,9 @@ export default function LibraryDetail({ onCancel, onSave }) {
       </Card>
 
       <div className="flex-1 p-6 pb-0 overflow-y-auto min-h-0">
-        <AgentToolCard />
-        <StatusCard steps={DEFAULT_STEPS} defaultOpen={false} />
-
         {/* Files Section */}
         <Collapsible open={filesOpen} onOpenChange={setFilesOpen}>
-          <Card className="mb-4 p-0">
+          <Card className="mb-6 p-0">
             <div className="flex items-center py-4 px-6 min-h-[68px]">
               <CollapsibleTrigger className="flex items-center gap-2 cursor-pointer select-none bg-transparent border-none p-0 flex-1 text-left font-sans hover:opacity-85">
                 <span className={`flex items-center transition-transform duration-200 ${filesOpen ? 'rotate-0' : '-rotate-90'}`}>
@@ -315,6 +314,10 @@ export default function LibraryDetail({ onCancel, onSave }) {
           </Card>
         </Collapsible>
 
+        <StatusCard steps={DEFAULT_STEPS} defaultOpen={false} />
+        <AgentToolCard />
+        <TestCard disabled />
+        <DeployCard ready={false} hasRunTests={false} />
       </div>
 
       {/* Footer */}
