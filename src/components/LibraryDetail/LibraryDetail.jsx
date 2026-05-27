@@ -12,6 +12,8 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '.
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '../ui/collapsible'
 import StatusCard from '../StatusCard/StatusCard'
 import AgentToolCard from '../AgentToolCard/AgentToolCard'
+import TestCard from '../TestCard/TestCard'
+import DeployCard from '../DeployCard/DeployCard'
 import { api } from '../../lib/api'
 
 const DEFAULT_STEPS = [
@@ -127,7 +129,7 @@ export default function LibraryDetail({ onCancel, onSave }) {
   const saveDisabled = saving || !hasUnsavedPendingFiles
 
   return (
-    <div className="flex-1 h-full bg-background flex flex-col overflow-hidden">
+    <div className="flex-1 h-full bg-muted flex flex-col overflow-hidden">
       {/* Sticky metadata card */}
       <Card className="px-6 shrink-0 rounded-none border-x-0 border-t-0 p-5 pb-0">
         <div className="flex flex-col gap-1.5 w-full mb-4">
@@ -205,9 +207,6 @@ export default function LibraryDetail({ onCancel, onSave }) {
       </Card>
 
       <div className="flex-1 p-6 pb-0 overflow-y-auto min-h-0">
-        <AgentToolCard />
-        <StatusCard steps={DEFAULT_STEPS} defaultOpen={false} />
-
         {/* Files Section */}
         <Collapsible open={filesOpen} onOpenChange={setFilesOpen}>
           <Card className="mb-6 p-0">
@@ -315,6 +314,10 @@ export default function LibraryDetail({ onCancel, onSave }) {
           </Card>
         </Collapsible>
 
+        <StatusCard steps={DEFAULT_STEPS} defaultOpen={false} />
+        <AgentToolCard />
+        <TestCard disabled />
+        <DeployCard ready={false} hasRunTests={false} />
       </div>
 
       {/* Footer */}

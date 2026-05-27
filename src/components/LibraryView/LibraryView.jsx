@@ -465,7 +465,9 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
     return file.status || 'Uploaded'
   }
 
-  const isDeployed = !!deployment
+  const isDeployed = Array.isArray(deployment?.agents)
+    ? deployment.agents.length > 0
+    : !!deployment?.deployedTo
   const hasRunTests = testCases.some(tc => tc.lastResult)
 
   const rawStatus = isDeployed ? 'Deployed'
@@ -501,19 +503,54 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
     setDeployCardAutoExpandSignal(s => s + 1)
   }, [])
 
-  const handleDeploy = useCallback(async (agent) => {
-    const nextDeployment = {
-      deployedTo: { agentId: agent.agentId, agentName: agent.agentName },
-      deployedAt: new Date().toISOString(),
-      deployedBy: 'Current User',
-    }
-    setDeployment(nextDeployment)
-    await persistLibraryPatch({ deployment: nextDeployment, status: 'Deployed' })
+  const handleDeploy = useCallback(async (agents) => {
+    const incoming = Array.isArray(agents) ? agents : [agents]
+    const timestamp = new Date().toISOString()
+    setDeployment(prev => {
+      const existing = Array.isArray(prev?.agents)
+        ? prev.agents
+        : prev?.deployedTo
+          ? [{
+              agentId: prev.deployedTo.agentId,
+              agentName: prev.deployedTo.agentName,
+              deployedAt: prev.deployedAt,
+              deployedBy: prev.deployedBy || 'Current User',
+            }]
+          : []
+      const additions = incoming
+        .filter(a => !existing.some(e => e.agentId === a.agentId))
+        .map(a => ({
+          agentId: a.agentId,
+          agentName: a.agentName,
+          deployedAt: timestamp,
+          deployedBy: 'Current User',
+        }))
+      const nextAgents = [...existing, ...additions]
+      const nextDeployment = nextAgents.length > 0 ? { agents: nextAgents } : null
+      persistLibraryPatch({ deployment: nextDeployment, status: nextAgents.length > 0 ? 'Deployed' : 'Ready' })
+      return nextDeployment
+    })
   }, [persistLibraryPatch])
 
-  const handleUndeploy = useCallback(async () => {
-    setDeployment(null)
-    await persistLibraryPatch({ deployment: null, status: 'Ready' })
+  const handleUndeploy = useCallback(async (agentId) => {
+    setDeployment(prev => {
+      const existing = Array.isArray(prev?.agents)
+        ? prev.agents
+        : prev?.deployedTo
+          ? [{
+              agentId: prev.deployedTo.agentId,
+              agentName: prev.deployedTo.agentName,
+              deployedAt: prev.deployedAt,
+              deployedBy: prev.deployedBy || 'Current User',
+            }]
+          : []
+      const nextAgents = agentId
+        ? existing.filter(a => a.agentId !== agentId)
+        : []
+      const nextDeployment = nextAgents.length > 0 ? { agents: nextAgents } : null
+      persistLibraryPatch({ deployment: nextDeployment, status: nextAgents.length > 0 ? 'Deployed' : 'Ready' })
+      return nextDeployment
+    })
   }, [persistLibraryPatch])
 
   const enrichedSteps = useMemo(() => {
@@ -684,23 +721,11 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
       <div
         ref={scrollRef}
         onScroll={handleScroll}
-        className={`flex-1 overflow-y-auto min-h-0 bg-background ${editing ? 'px-6 pb-6 pt-4' : 'p-6'}`}
+        className={`flex-1 overflow-y-auto min-h-0 bg-muted ${editing ? 'px-6 pb-6 pt-4' : 'p-6'}`}
       >
-        {/* Agent Tool card */}
-        <AgentToolCard
-          libraryName={library.libraryName}
-          defaultOpen={false}
-          autoExpandSignal={agentToolAutoExpandSignal}
-          forceOpen={isDemoReady}
-          agentToolReady={agentToolReady}
-        />
-
-        {/* Status card */}
-        <StatusCard key={statusCardKey} steps={enrichedSteps} defaultOpen={autoExpandStatusOnEnter || isDemoFailed} />
-
         {/* Files card */}
         <Collapsible open={filesOpen} onOpenChange={setFilesOpen}>
-          <Card className="overflow-hidden rounded-xl p-0">
+          <Card className="mb-6 overflow-hidden rounded-xl p-0">
             <div className="flex items-center py-4 px-6">
               <CollapsibleTrigger className="flex items-center gap-2 flex-1 cursor-pointer bg-transparent border-none p-0 font-sans hover:opacity-85">
                 <span className={`flex items-center transition-transform duration-200 ${filesOpen ? 'rotate-0' : '-rotate-90'}`}>
@@ -900,8 +925,20 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
           </Card>
         </Collapsible>
 
+        {/* Status card */}
+        <StatusCard key={statusCardKey} steps={enrichedSteps} defaultOpen={autoExpandStatusOnEnter || isDemoFailed} />
+
+        {/* Agent Tool card */}
+        <AgentToolCard
+          libraryName={library.libraryName}
+          defaultOpen={false}
+          autoExpandSignal={agentToolAutoExpandSignal}
+          forceOpen={isDemoReady}
+          agentToolReady={agentToolReady}
+        />
+
         {/* Test card */}
-        <div className="mt-4">
+        <div>
           <TestCard
             disabled={pipelineOverall !== 'ready' && !isDemoReady}
             disabledMessage="Test cases will be available once your data is indexed."

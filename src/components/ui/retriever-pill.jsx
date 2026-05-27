@@ -9,11 +9,11 @@ const retrieverPillVariants = cva(
     variants: {
       variant: {
         default:
-          "bg-[#f3f3f3] dark:bg-[#3a3a3a] border border-[#e5e5e5] dark:border-[#4a4a4a] text-foreground pl-1 pr-1.5 py-0.5",
+          "bg-secondary border border-border text-foreground pl-1 pr-1.5 py-0.5",
         placeholder:
-          "border border-dashed border-[#939393] dark:border-[#666] text-muted-foreground pl-1 pr-1.5 py-0.5 cursor-pointer hover:border-primary hover:bg-primary/5 active:scale-[0.96]",
+          "border border-dashed border-input text-muted-foreground pl-1 pr-1.5 py-0.5 cursor-pointer hover:border-primary hover:bg-primary/5 active:scale-[0.96]",
         indexing:
-          "bg-[#f3f3f3] dark:bg-[#3a3a3a] border border-primary/50 text-muted-foreground pl-1 pr-1.5 py-0.5 relative overflow-hidden",
+          "bg-secondary border border-primary/50 text-muted-foreground pl-1 pr-1.5 py-0.5 relative overflow-hidden",
         ready:
           "bg-[var(--status-ready-bg)] border border-[var(--status-ready-text)]/30 text-[var(--status-ready-text)] pl-1 pr-1.5 py-0.5",
       },
@@ -51,7 +51,7 @@ function RetrieverPill({
         <span 
           className="absolute inset-0 bg-[length:200%_100%] animate-shimmer"
           style={{
-            backgroundImage: 'linear-gradient(90deg, transparent 0%, rgba(6, 106, 254, 0.15) 50%, transparent 100%)'
+            backgroundImage: 'linear-gradient(90deg, transparent 0%, color-mix(in oklch, var(--primary) 15%, transparent) 50%, transparent 100%)'
           }}
         />
       )}

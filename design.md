@@ -64,19 +64,19 @@ All tokens live in `src/index.css` as CSS custom properties, exposed to Tailwind
 #### Brand
 | Token | Light | Dark | Use |
 |---|---|---|---|
-| `--primary` | `#066afe` | `#3b82f6` | Primary actions, links |
+| `--primary` | `#066AFE` | `#066AFE` | Primary actions, links — same value in both modes |
 | `--primary-foreground` | `#ffffff` | `#ffffff` | Text on primary |
-| `--primary-hover` | `#0554cb` | `#2563eb` | Hover state |
-| `--primary-active` | `#044099` | `#1d4ed8` | Pressed state |
-| `--primary-light` | `#eef4ff` | `#172554` | Tinted backgrounds |
-| `--primary-light-border` | `#9dc0f0` | `#1e40af` | Tinted borders |
+| `--primary-hover` | `#0554CB` | `#2D85FE` | Hover state (lighter in dark for contrast) |
+| `--primary-active` | `#044099` | `#5BA0FE` | Pressed state |
+| `--primary-light` | `#EEF4FF` | `#172554` | Tinted backgrounds |
+| `--primary-light-border` | `#9DC0F0` | `#1E40AF` | Tinted borders |
 
 #### Borders & inputs
 | Token | Light | Dark |
 |---|---|---|
 | `--border` | `#C9C9C9` | `#374151` |
 | `--input` | `#d8d8d8` | `#4b5563` |
-| `--ring` | `#066afe` | `#60a5fa` |
+| `--ring` | `#066AFE` | `#066AFE` |
 
 #### Status / semantic
 Each status has a paired `*-bg` and `*-text` so badges/pills always meet contrast in both themes.
@@ -100,7 +100,7 @@ Each status has a paired `*-bg` and `*-text` so badges/pills always meet contras
 | `--sidebar-accent` | `#E8F3FD` | `#1f2937` | Active nav row bg |
 | `--sidebar-accent-foreground` | `#044099` | `#e5e7eb` | Active nav text |
 | `--sidebar-border` | `#e5e5e5` | `#374151` | |
-| `--sidebar-primary` | `#066afe` | `#3b82f6` | Active rail color |
+| `--sidebar-primary` | `#066AFE` | `#066AFE` | Active rail color |
 
 #### Charts (oklch scale)
 `--chart-1` … `--chart-5` are tuned in oklch for perceptually even hues across light/dark. Use directly when adding charts.
