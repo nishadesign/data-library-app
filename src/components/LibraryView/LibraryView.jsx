@@ -293,8 +293,11 @@ export default function LibraryView({ library, onEdit, onLibraryUpdate, onCancel
   }, [arrangeMode, cancelArrangeMode])
 
   useEffect(() => {
+    // Only resync card order when switching libraries; intra-library updates
+    // are driven by the user via arrange mode and would otherwise stomp drag state.
     setCardOrder(sanitizeCardOrder(library?.cardOrder))
-  }, [library?.id, library?.cardOrder])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [library?.id])
 
   function startEditing() {
     if (isReadOnlyDemo) return

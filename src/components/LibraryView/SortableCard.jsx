@@ -40,13 +40,15 @@ export default function SortableCard({ id, arranging, jiggle, delayIndex = 0, ch
       : 'cursor-grab'
     : ''
 
+  const sortableAttrs = arranging ? attributes : {}
+
   return (
     <div
       ref={setNodeRef}
       style={style}
       data-dragging={isDragging ? 'true' : 'false'}
       className={`relative transition-transform duration-150 ${jiggleClasses} ${liftClasses} ${cursor}`}
-      {...attributes}
+      {...sortableAttrs}
     >
       {children}
       {arranging && (
